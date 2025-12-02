@@ -1,0 +1,78 @@
+{
+  "name": "root",
+
+  "globalData": {
+    "ambientCoeff": 0.0,
+    "diffuseCoeff": 1.0,
+    "specularCoeff": 1.0,
+    "transparentCoeff": 0
+  },
+
+  "cameraData": {
+    "position": [0.0, 0.0, 6.0],
+    "up": [0.0, 1.0, 0.0],
+    "heightAngle": 45.0,
+    "focus": [0.0, 0.0, 0.0]
+  },
+
+  "groups": [
+    {
+      "groups": [
+        {
+          "translate": [0.0, 2.0, 2.0],
+          "lights": [
+            {
+              "type": "point",
+              "color": [200.0, 200.0, 200.0],
+              "attenuationCoeff": [1.0, 0.0, 0.05]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "groups": [
+
+        {
+          "translate": [-2.5, 0.0, 0.0],
+          "scale": [1.2, 1.2, 1.2],
+          "primitives": [
+            {
+              "type": "sphere",
+              "diffuse": [5.0, 5.0, 5.0],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 80
+            }
+          ]
+        },
+
+        {
+          "translate": [0.0, 0.0, 0.0],
+          "scale": [1.2, 1.2, 1.2],
+          "primitives": [
+            {
+              "type": "sphere",
+              "diffuse": [1.0, 0.2, 0.2],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 30
+            }
+          ]
+        },
+
+        {
+          "translate": [2.5, 0.0, 0.0],
+          "scale": [1.2, 1.2, 1.2],
+          "primitives": [
+            {
+              "type": "sphere",
+              "diffuse": [0.1, 0.1, 0.5],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 10
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
