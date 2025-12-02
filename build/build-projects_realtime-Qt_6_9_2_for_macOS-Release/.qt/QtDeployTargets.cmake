@@ -1,4 +1,0 @@
-set(__QT_DEPLOY_TARGET_projects_flameon_FILE /Users/chinchillacrazy/Code/Graphics/proj-flameon/build/build-projects_realtime-Qt_6_9_2_for_macOS-Release/projects_flameon)
-set(__QT_DEPLOY_TARGET_projects_flameon_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_StaticGLEW_FILE /Users/chinchillacrazy/Code/Graphics/proj-flameon/build/build-projects_realtime-Qt_6_9_2_for_macOS-Release/libStaticGLEW.a)
-set(__QT_DEPLOY_TARGET_StaticGLEW_TYPE STATIC_LIBRARY)
