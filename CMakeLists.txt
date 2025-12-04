@@ -50,6 +50,8 @@ add_executable(${PROJECT_NAME}
     src/shape/cone.h src/shape/cone.cpp
     src/shape/cube.h src/shape/cube.cpp
     src/shape/objloader.h src/shape/objloader.cpp
+    src/lsystem/lsystem.cpp src/lsystem/lsystem.h
+    src/shape/objloadernew.h src/shape/objloadernew.cpp
 
 )
 
