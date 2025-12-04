@@ -155,6 +155,33 @@ void Realtime::initializeGL() {
 
     //fire
     createCircle(4, -1.f);
+    Particle p{glm::vec3{0,0,0}};
+    m_particles.push_back(p);
+
+    //initial positions/offsets + colors
+    for(int i = 0; i<m_particles.size();++i) {
+        m_pos_data.push_back(m_particles[i].position.x);
+        m_pos_data.push_back(m_particles[i].position.y);
+        m_pos_data.push_back(m_particles[i].position.z);
+
+        m_color_data.push_back(m_particles[i].color.x);
+        m_color_data.push_back(m_particles[i].color.y);
+        m_color_data.push_back(m_particles[i].color.z);
+    }
+
+    //positions/offsets
+    glGenBuffers(GLuint(1.f), &m_pos_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_pos_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 50000*3*sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_pos_data.size()*sizeof(GLfloat), m_pos_data.data());
+
+    //colors
+    glGenBuffers(GLuint(1.f), &m_color_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_color_vbo);
+    glBufferData(GL_ARRAY_BUFFER, 50000*3*sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_color_data.size()*sizeof(GLfloat), m_color_data.data());
+
+    //generate vao
     glGenBuffers(GLuint(1.f), &m_fire_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_fire_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_vertexData.size(), m_vertexData.data(), GL_STATIC_DRAW);
@@ -163,8 +190,16 @@ void Realtime::initializeGL() {
     glBindVertexArray(m_fire_vao);
     //fire vao attributes
     glEnableVertexAttribArray(0); //position
+    glEnableVertexAttribArray(1); //offsets
+    glEnableVertexAttribArray(2); //color
+
     glBindBuffer(GL_ARRAY_BUFFER, m_fire_vbo);
     glVertexAttribPointer(0, 3.f, GL_FLOAT, GL_FALSE,3*sizeof(GLfloat),reinterpret_cast<void*>(0)); //position
+    glBindBuffer(GL_ARRAY_BUFFER, m_pos_vbo);
+    glVertexAttribPointer(1, 3.f, GL_FLOAT, GL_FALSE,0,reinterpret_cast<void*>(0)); //offsets
+    glBindBuffer(GL_ARRAY_BUFFER, m_color_vbo);
+    glVertexAttribPointer(2, 3.f, GL_FLOAT, GL_FALSE,0,reinterpret_cast<void*>(0)); //colors
+
     //unbind fire vao
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -184,6 +219,10 @@ void Realtime::paintGL() {
 
     glUseProgram(m_fire_shader);
     glBindVertexArray(m_fire_vao);
+    // draw triangles
+    glVertexAttribDivisor(0,0);
+    glVertexAttribDivisor(1,1);
+    glVertexAttribDivisor(2,1);
     glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, 1);
 
     glUseProgram(m_shader);
