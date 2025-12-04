@@ -91,21 +91,34 @@ void Realtime::makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bo
     insertVec3(m_vertexData, bottomRight);
 }
 
+// void Realtime::makeCircleSlice(float currentTheta, float nextTheta, float z) {
+//     float r_step = m_radius/1.f;
+//     for (int i = 0; i<=m_radius; ++i) {
+//         float r1 = m_radius - i*r_step;
+//         float r2 = m_radius - (i+1)*r_step;
+
+//         glm::vec3 bottomLeft = {r1*cos(currentTheta),r1*sin(currentTheta),z};
+//         glm::vec3 topLeft = {r2*cos(currentTheta),r2*sin(currentTheta),z};
+//         glm::vec3 topRight = {r2*cos(nextTheta),r2*sin(nextTheta),z};
+//         glm::vec3 bottomRight = {r1*cos(nextTheta),r1*sin(nextTheta),z};
+
+//         makeCircleTile(topLeft, bottomLeft, bottomRight);
+//         makeCircleTile(bottomRight, topRight, topLeft);
+//     }
+// }
+
+//chat replacement for above
 void Realtime::makeCircleSlice(float currentTheta, float nextTheta, float z) {
-    float r_step = m_radius/1.f;
-    for (int i = 0; i<m_radius; ++i) {
-        float r1 = m_radius - i*r_step;
-        float r2 = m_radius - (i+1)*r_step;
+    if (m_radius <= 0.f) return; // nothing to draw
 
-        glm::vec3 bottomLeft = {r1*cos(currentTheta),r1*sin(currentTheta),z};
-        glm::vec3 topLeft = {r2*cos(currentTheta),r2*sin(currentTheta),z};
-        glm::vec3 topRight = {r2*cos(nextTheta),r2*sin(nextTheta),z};
-        glm::vec3 bottomRight = {r1*cos(nextTheta),r1*sin(nextTheta),z};
+    glm::vec3 center     = {0.f, 0.f, z};
+    glm::vec3 edge1      = {m_radius * cos(currentTheta), m_radius * sin(currentTheta), z};
+    glm::vec3 edge2      = {m_radius * cos(nextTheta),    m_radius * sin(nextTheta),    z};
 
-        makeCircleTile(topLeft, bottomLeft, bottomRight);
-        makeCircleTile(bottomRight, topRight, topLeft);
-    }
+    // One triangle: center, edge1, edge2
+    makeCircleTile(edge1, center, edge2);
 }
+
 
 void Realtime::createCircle(float tessalations, float z) {
     float step_size = (2*M_PI)/tessalations;
@@ -154,9 +167,16 @@ void Realtime::initializeGL() {
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
 
     //fire
-    createCircle(4, -1.f);
-    Particle p{glm::vec3{0,0,0}};
-    m_particles.push_back(p);
+    createCircle(m_tessalations, -0.f);
+    //instance some particles
+    for(int i = -m_rows; i<m_rows;++i) {
+        for(int j = -m_cols; j<m_cols;++j) {
+            Particle p{glm::vec3{i*(m_offset), j*(m_offset),0}};
+            m_particles.push_back(p);
+        }
+    }
+    // Particle p{glm::vec3{0,0,0}};
+    // m_particles.push_back(p);
 
     //initial positions/offsets + colors
     for(int i = 0; i<m_particles.size();++i) {
@@ -168,6 +188,8 @@ void Realtime::initializeGL() {
         m_color_data.push_back(m_particles[i].color.y);
         m_color_data.push_back(m_particles[i].color.z);
     }
+
+    createUniforms();
 
     //positions/offsets
     glGenBuffers(GLuint(1.f), &m_pos_vbo);
@@ -204,12 +226,158 @@ void Realtime::initializeGL() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-    createUniforms();
-
     makeFullscreenQuad();
     makeBloomFBO();
 
     initialized = true;
+}
+
+bool checkOverlap(glm::vec2 c1, glm::vec2 c2, float r1, float r2) {
+    return fabs((c1.x-c2.x)*(c1.x-c2.x) + (c1.y-c2.y)*(c1.y-c2.y)) <= (r1+r2)*(r1+r2);
+}
+
+void Realtime::fireLoop() {
+    //movement + gravity
+    for(int a = 0; a<m_particles.size(); ++a) {
+        int index1 = 3*a;
+        //gravity
+        m_particles[a].velocity.y -= m_gravity;
+
+        //x-axis move
+        m_pos_data[index1 + 0] += m_particles[a].velocity.x;
+
+        //ground check
+        if(m_pos_data[index1 + 1] + m_particles[a].velocity.y < -1 + m_radius) {
+            m_pos_data[index1 +1] = -1 +m_radius;
+            m_particles[a].velocity.y *= -m_bounce_factor;
+            m_particles[a].velocity.x *= 0.95f;
+        }
+        else {
+            m_pos_data[index1 + 1] += m_particles[a].velocity.y;
+
+            //air depletes heat
+            m_particles[a].heat -= m_heat_decay;
+
+            //chat v5.1 for improved heat decay
+            float h = m_particles[a].heat;
+
+            if(m_pos_data[index1 + 1] < -0.95f) {
+                h = 0.99f;
+                m_particles[a].heat = h;
+            }
+
+            h = glm::clamp(h, 0.f, 1.f);
+            glm::vec3 color;
+
+            if(h < 0.33) {
+                float t = h/0.33;
+                color = glm::mix(glm::vec3{0,0,0}, glm::vec3{1,0,0}, t); //mix black -> red
+            }
+            else if (h < 0.66) {
+                float t = (h-0.33)/0.33f;
+                color = glm::mix(glm::vec3{1,0,0}, glm::vec3{1,0.5,0}, t); //red -> orange
+            } else {
+                float t = (h - 0.66)/0.34f;
+                color = glm::mix(glm::vec3{1,0.5,0}, glm::vec3{1,0.9,0}, t); //orange -> almost yellow
+            }
+
+            m_color_data[index1 + 0] = color.r;
+            m_color_data[index1 + 1] = color.g;
+            m_color_data[index1 + 2] = color.b;
+        }
+        m_particles[a].life -= m_decay;
+
+    }
+
+    //collisons
+    for(int c = 0; c<m_collision_depth; ++c) {
+        for (int a = 0; a<m_particles.size(); ++a) {
+            int index1 = 3*a;
+
+            for(int b = a+1; b<m_particles.size();++b) {
+                int index2 = 3*b;
+
+                glm::vec2 circle1{m_pos_data[index1 + 0], m_pos_data[index1 + 1]};
+                glm::vec2 circle2{m_pos_data[index2 + 0], m_pos_data[index2 + 1]};
+                if(checkOverlap(circle1, circle2, m_radius, m_radius)) {
+                    //we have collision
+                    glm::vec2 difference = circle1 - circle2;
+                    float distance = glm::length(circle1 - circle2);
+                    glm::vec3 normal = glm::vec3{glm::normalize(circle1 - circle2),0}; //normal formula for circle
+                    float overlap = (distance - m_radius - m_radius)/2.f;
+
+                    //displace circle1
+                    m_pos_data[index1 + 0] -= overlap*(m_pos_data[index1+0]-m_pos_data[index2+0])/distance;
+                    m_pos_data[index1 + 1] -= overlap*(m_pos_data[index1+1]-m_pos_data[index2+1])/distance;
+
+                    //displace circle2
+                    m_pos_data[index2 + 0] += overlap*(m_pos_data[index1+0]-m_pos_data[index2+0])/distance;
+                    m_pos_data[index2 + 1] += overlap*(m_pos_data[index1+1]-m_pos_data[index2+1])/distance;
+
+                    glm::vec3 relativeVelocity = m_particles[a].velocity - m_particles[b].velocity;
+                    float velocityAboutNormal = glm::dot(relativeVelocity, normal);
+
+                    if(velocityAboutNormal < 0) {
+
+                        float impulseMagnitude = (-1.5)*velocityAboutNormal/2.f;
+
+                        m_particles[a].velocity += impulseMagnitude*normal;
+                        m_particles[b].velocity -= impulseMagnitude*normal;
+
+                        //if vertical collsion, give particle a push
+                        if(fabs(normal.y) > 0.8 && m_particles[a].life > 0.6) {
+                            float rollDirection = (normal.x > 0) ? -1 : 1;
+                            float rollStrength = 0.001f * fabs(normal.y);
+
+                            m_pos_data[index1 + 0] += rollDirection*rollStrength;
+                            m_pos_data[index2 + 0] -= rollDirection*rollStrength;
+                        }
+                    }
+
+                    //chat v5.1 for improved heat transfer
+                    m_particles[a].heat = glm::min(1.f, m_particles[a].heat + m_heat_transfer);
+                    m_particles[b].heat = glm::min(1.f, m_particles[b].heat + m_heat_transfer);
+
+                    //upward force due to heat; once reach threshold
+                    if(m_particles[a].heat > 0.7f) {
+                        m_particles[a].velocity.y += 0.0004f;
+                    }
+                }
+            }
+        }
+    }
+
+    //side checks
+    for (int a = 0; a<m_particles.size(); ++a) {
+        int index1 = 3*a;
+        //x
+        if(m_pos_data[index1 + 0] < -m_side_bound + m_radius) {
+            m_pos_data[index1 + 0] = -m_side_bound + m_radius;
+
+            //horizontal bounce for recycling particles
+            m_color_data[index1 + 0] = 0;
+            m_color_data[index1 + 1] = 0;
+            m_color_data[index1 + 2] = 0;
+            m_particles[a].velocity.x = 0.001f;
+        }
+        if(m_pos_data[index1 + 0] > m_side_bound - m_radius) {
+            m_pos_data[index1 + 0] = m_side_bound - m_radius;
+
+            //horizontal bounce for recycling particles
+            m_color_data[index1 + 0] = 0;
+            m_color_data[index1 + 1] = 0;
+            m_color_data[index1 + 2] = 0;
+            m_particles[a].velocity.x = -0.001f;
+        }
+    }
+
+    //bind, THEN "upload" offsets to vbos for shader
+    glBindBuffer(GL_ARRAY_BUFFER, m_pos_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_pos_data.size()*sizeof(GLfloat), m_pos_data.data());
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_color_vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, m_color_data.size()*sizeof(GLfloat), m_color_data.data());
+
 }
 
 void Realtime::paintGL() {
@@ -219,23 +387,37 @@ void Realtime::paintGL() {
 
     glUseProgram(m_fire_shader);
     glBindVertexArray(m_fire_vao);
+
+    glm::mat4 model = glm::mat4{1.f};
+
+    glm::mat4 view_mat = m_camera.getViewMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
+
+    glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
+
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
+
+    fireLoop();
+
     // draw triangles
     glVertexAttribDivisor(0,0);
     glVertexAttribDivisor(1,1);
     glVertexAttribDivisor(2,1);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, 1);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
 
     glUseProgram(m_shader);
 
     // Need view, proj, and model in shader for mvp matrix
-    glm::mat4 view_mat = m_camera.getViewMatrix();
+    //glm::mat4 view_mat = m_camera.getViewMatrix();
     glUniformMatrix4fv(view_ID, 1, GL_FALSE, &view_mat[0][0]);
 
     glm::vec3 camera_pos = glm::vec3(glm::inverse(view_mat)[3]);
     glUniform3f(camera_ID, camera_pos.x, camera_pos.y, camera_pos.z);
 
-    glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
+    //glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
     glUniformMatrix4fv(proj_ID, 1, GL_FALSE, &proj_mat[0][0]);
+
 
     // Phong Id's
     SceneGlobalData global = m_renderData.globalData;
