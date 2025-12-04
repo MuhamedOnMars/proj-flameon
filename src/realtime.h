@@ -91,11 +91,13 @@ private:
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
 
     //fire
+    void fireLoop();
+    int m_tessalations = 4;
     GLuint m_fire_shader;
     GLuint m_fire_vbo;    // Stores id of VBO
     GLuint m_fire_vao;    // Stores id of VAO
     std::vector<float> m_vertexData;
-    float m_radius = 2.0f;
+    float m_radius = 0.005f;
     void createCircle(float tessalations, float z);
     void makeCircleSlice(float currentTheta, float nextTheta, float z);
     void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
@@ -111,6 +113,26 @@ private:
 
     GLuint m_color_vbo;
     std::vector<float> m_color_data = {};
+
+    //forces
+    float m_gravity = 0.0004f;
+
+    //collisions
+    int m_collision_depth = 2;
+    float m_bounce_factor = 0.5;
+
+    //particles
+    int m_maxParticles = 50000;
+    int m_rows = 52;
+    int m_cols = 20;
+    float m_decay = 0.001;
+
+    //heat
+    float m_heat_transfer = 0.5;
+    float m_heat_decay = 0.1;
+
+    float m_side_bound = 2.f;
+    float m_offset = 0.03;
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments
