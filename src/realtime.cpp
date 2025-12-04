@@ -78,6 +78,45 @@ void Realtime::finish() {
     this->doneCurrent();
 }
 
+
+void insertVec3(std::vector<float> &data, glm::vec3 v) {
+    data.push_back(v.x);
+    data.push_back(v.y);
+    data.push_back(v.z);
+}
+
+void Realtime::makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft) {
+    insertVec3(m_vertexData, bottomLeft);
+    insertVec3(m_vertexData, top);
+    insertVec3(m_vertexData, bottomRight);
+}
+
+void Realtime::makeCircleSlice(float currentTheta, float nextTheta, float z) {
+    float r_step = m_radius/1.f;
+    for (int i = 0; i<m_radius; ++i) {
+        float r1 = m_radius - i*r_step;
+        float r2 = m_radius - (i+1)*r_step;
+
+        glm::vec3 bottomLeft = {r1*cos(currentTheta),r1*sin(currentTheta),z};
+        glm::vec3 topLeft = {r2*cos(currentTheta),r2*sin(currentTheta),z};
+        glm::vec3 topRight = {r2*cos(nextTheta),r2*sin(nextTheta),z};
+        glm::vec3 bottomRight = {r1*cos(nextTheta),r1*sin(nextTheta),z};
+
+        makeCircleTile(topLeft, bottomLeft, bottomRight);
+        makeCircleTile(bottomRight, topRight, topLeft);
+    }
+}
+
+void Realtime::createCircle(float tessalations, float z) {
+    float step_size = (2*M_PI)/tessalations;
+    for (int i = 0; i<tessalations; ++i) {
+        float currentTheta = i*step_size;
+        float nextTheta = (i+1)*step_size;
+        makeCircleSlice(currentTheta, nextTheta, z);
+    }
+}
+
+
 void Realtime::initializeGL() {
     m_devicePixelRatio = this->devicePixelRatio();
     m_default_fbo = 2;
@@ -112,6 +151,24 @@ void Realtime::initializeGL() {
     m_shader = ShaderLoader::createShaderProgram(":/resources/shaders/lighting.vert", ":/resources/shaders/lighting.frag");
     m_shader_bloom = ShaderLoader::createShaderProgram(":/resources/shaders/bloom.vert", ":/resources/shaders/bloom.frag");
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
+    m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
+
+    //fire
+    createCircle(4, -1.f);
+    glGenBuffers(GLuint(1.f), &m_fire_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_fire_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*m_vertexData.size(), m_vertexData.data(), GL_STATIC_DRAW);
+    //fire vao
+    glGenVertexArrays(GLuint(1.f), &m_fire_vao);
+    glBindVertexArray(m_fire_vao);
+    //fire vao attributes
+    glEnableVertexAttribArray(0); //position
+    glBindBuffer(GL_ARRAY_BUFFER, m_fire_vbo);
+    glVertexAttribPointer(0, 3.f, GL_FLOAT, GL_FALSE,3*sizeof(GLfloat),reinterpret_cast<void*>(0)); //position
+    //unbind fire vao
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     createUniforms();
 
     makeFullscreenQuad();
@@ -124,6 +181,10 @@ void Realtime::paintGL() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_fbo_width, m_fbo_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(m_fire_shader);
+    glBindVertexArray(m_fire_vao);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, 1);
 
     glUseProgram(m_shader);
 

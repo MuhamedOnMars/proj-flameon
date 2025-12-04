@@ -90,6 +90,16 @@ private:
     void createUniforms();
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
 
+    //fire
+    GLuint m_fire_shader;
+    GLuint m_fire_vbo;    // Stores id of VBO
+    GLuint m_fire_vao;    // Stores id of VAO
+    std::vector<float> m_vertexData;
+    float m_radius = 2.0f;
+    void createCircle(float tessalations, float z);
+    void makeCircleSlice(float currentTheta, float nextTheta, float z);
+    void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
+
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments
      * @param triangleData - the vector containing the triangle data
