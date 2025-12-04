@@ -99,6 +99,18 @@ private:
     void createCircle(float tessalations, float z);
     void makeCircleSlice(float currentTheta, float nextTheta, float z);
     void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
+    struct Particle {
+        glm::vec3 position, velocity;
+        glm::vec3 color = glm::vec3{0,1,0};
+        float life = 1.f;
+        float heat = 0.f;
+    };
+    std::vector<Particle> m_particles;
+    GLuint m_pos_vbo;
+    std::vector<float> m_pos_data = {};
+
+    GLuint m_color_vbo;
+    std::vector<float> m_color_data = {};
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments
