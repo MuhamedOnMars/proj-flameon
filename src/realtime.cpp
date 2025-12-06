@@ -123,7 +123,7 @@ void Realtime::initializeGL() {
     fillVertices(leaf, m_vbo_leaf, m_vao_leaf, num_leaf_verts);
 
     Obj branch;
-    const std::string path_1 = "src/obj/branch.obj";
+    const std::string path_1 = "src/obj/branch_new.obj";
     branch.readOBJ(path_1);
 
     fillVertices(branch, m_vbo_branch, m_vao_branch, num_branch_verts);
