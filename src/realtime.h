@@ -59,6 +59,7 @@ private:
     GLuint m_shader, m_shader_bloom, m_shader_blur;
     GLuint m_default_fbo, m_fbo, m_rbo;
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
+    GLuint m_lut_texture;
 
     GLuint m_fullscreen_vbo, m_fullscreen_vao;
     GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube;
@@ -83,6 +84,7 @@ private:
     // Functions
     void makeFullscreenQuad();
     void makeBloomFBO();
+    void loadLUT();
     void setBloom();
     void createShapes();
     void fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts);

@@ -116,6 +116,7 @@ void Realtime::initializeGL() {
 
     makeFullscreenQuad();
     makeBloomFBO();
+    loadLUT();
 
     initialized = true;
 }
@@ -425,6 +426,46 @@ void Realtime::makeBloomFBO() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
 }
 
+void Realtime::loadLUT() {
+    // From chat for loading the file
+    QFile qfile(":/scenefiles/custom_scenes/cool_tone.cube");
+    if (!qfile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Failed to open LUT file:" << qfile.errorString();
+        return;
+    }
+    QTextStream in(&qfile);
+    int lutSize = 64;
+    std::vector<float> lutData;
+    lutData.reserve(lutSize * lutSize * lutSize * 3);
+
+    while (!in.atEnd()) {
+        QString lineQ = in.readLine();
+        std::string line = lineQ.toStdString();
+
+        if (line.empty() || line[0] == '#') continue;
+        if (line.rfind("LUT_3D_SIZE", 0) == 0) continue;
+
+        float r, g, b;
+        if (sscanf(line.c_str(), "%f %f %f", &r, &g, &b) == 3) {
+            lutData.push_back(r);
+            lutData.push_back(g);
+            lutData.push_back(b);
+        }
+    }
+
+    // Load up the texture
+    glGenTextures(1, &m_lut_texture);
+    glBindTexture(GL_TEXTURE_3D, m_lut_texture);
+
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB16F, lutSize, lutSize, lutSize, 0, GL_RGB, GL_FLOAT, lutData.data());
+}
+
 void Realtime::setBloom() {
     glUseProgram(m_shader_blur);
     GLuint texture_ID = glGetUniformLocation(m_shader_blur, "tex");
@@ -462,14 +503,22 @@ void Realtime::setBloom() {
     glUniform1i(scene_ID, 0);
     GLuint blur_ID = glGetUniformLocation(m_shader_bloom, "blur");
     glUniform1i(blur_ID, 1);
+
     GLuint exposure_ID = glGetUniformLocation(m_shader_bloom, "exposure");
     glUniform1f(exposure_ID, settings.exposure);
+
+    GLuint grade_ID = glGetUniformLocation(m_shader_bloom, "graded");
+    glUniform1i(grade_ID, settings.graded);
+    GLuint LUT_ID = glGetUniformLocation(m_shader_bloom, "LUT");
+    glUniform1i(LUT_ID, 2);
 
     glBindVertexArray(m_fullscreen_vao);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_pingpong_color[!horizontal]);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_3D, m_lut_texture);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
