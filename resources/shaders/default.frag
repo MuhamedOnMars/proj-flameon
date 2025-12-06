@@ -109,5 +109,7 @@ void main() {
 
         frag_color = vec4(output_color, 1.0);
     }
+
+    frag_color = vec4(1);
 }
 

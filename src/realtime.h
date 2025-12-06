@@ -14,6 +14,9 @@
 #include <QTimer>
 #include <iostream>
 #include <set>
+#include <stack>
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/transform.hpp"
 
 #include "utils/sceneparser.h"
 #include "camera/camera.h"
@@ -61,8 +64,8 @@ private:
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
 
     GLuint m_fullscreen_vbo, m_fullscreen_vao;
-    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube;
-    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube;
+    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube, m_vbo_leaf, m_vbo_branch;
+    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube, m_vao_leaf, m_vao_branch;
 
     GLuint view_ID, proj_ID, model_ID, camera_ID;
     GLuint ambient_k_ID, diffuse_k_ID, specular_k_ID;
@@ -70,7 +73,9 @@ private:
     GLuint min_fog_ID, max_fog_ID;
 
     // Vertices vars
-    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts = 0;
+    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts, num_leaf_verts, num_branch_verts = 0;
+    std::vector<float> m_leafData;
+    std::vector<float> m_branchData;
 
     // Random vars
     RenderData m_renderData;
@@ -78,6 +83,8 @@ private:
     int old_param1, old_param2;
     bool initialized = false;
     int m_fbo_width, m_fbo_height, m_screen_width, m_screen_height;
+    // std::vector<std::pair<PrimitiveType, glm::mat4>> m_treeData; //For L-Systems
+    std::vector<RenderShapeData> m_treeData; //For L-Systems
 
 
     // Functions
@@ -89,6 +96,9 @@ private:
     void phongIllumination(RenderShapeData object);
     void createUniforms();
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
+    //L-System Functions
+    void generateLSystem();
+    void drawLSystem();
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments

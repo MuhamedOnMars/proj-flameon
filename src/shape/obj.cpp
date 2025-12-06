@@ -1,13 +1,26 @@
-#include "objloadernew.h"
+#include "obj.h"
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
 
-Objloadernew::Objloadernew() {}
+std::vector<float> Obj::generateShape() {
+    return m_vertexData;
+}
 
-std::vector<float> Objloadernew::readOBJ(const std::string &path){
+void Obj::updateParams(int param1, int param2) {
+    // m_vertexData = std::vector<float>();
+    // m_param1 = std::max(param1, 2);
+    // m_param2 = std::max(param2, 3);
+    // setVertexData();
+}
+
+void Obj::setVertexData() {
+    //makeSphere();
+}
+
+void Obj::readOBJ(const std::string &path){
     std::ifstream file(path);
     if (!file) {
         throw std::runtime_error("Cannot open OBJ " + path);
@@ -57,25 +70,5 @@ std::vector<float> Objloadernew::readOBJ(const std::string &path){
         }
     }
 
-    return objData;
-}
-
-std::vector<float> Objloadernew::readLeaf(){
-    const std::string path = "src/obj/leaf_2.obj";
-    return readOBJ(path);
-}
-
-std::vector<float> Objloadernew::readBranch(){
-    const std::string path = "src/obj/branch.obj";
-    return readOBJ(path);
-}
-
-std::vector<float> Objloadernew::readTile(int tile){
-    //const std::string path = "src/obj/3d_tiles/tile.obj";
-
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer),
-             "src/obj/3d_tiles/tile_%02d.obj", tile);
-    //return readOBJ(path);
-    return readOBJ(buffer);
+    m_vertexData = objData;
 }

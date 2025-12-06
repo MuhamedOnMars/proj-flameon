@@ -6,8 +6,10 @@
 #include "shape/cylinder.h"
 #include "shape/cone.h"
 #include "shape/cube.h"
+#include "shape/obj.h"
 #include "shape/objloader.h"
 #include "camera/camera.h"
+#include "lsystem/lsystem.h"
 
 #include <QCoreApplication>
 #include <QMouseEvent>
@@ -16,6 +18,7 @@
 #include "settings.h"
 
  #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/transform.hpp>
 
 // ================== Rendering the Scene!
 
@@ -114,6 +117,20 @@ void Realtime::initializeGL() {
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
     createUniforms();
 
+    Obj leaf;
+    const std::string path = "src/obj/leaf_2.obj";
+    leaf.readOBJ(path);
+    fillVertices(leaf, m_vbo_leaf, m_vao_leaf, num_leaf_verts);
+
+    Obj branch;
+    const std::string path_1 = "src/obj/branch.obj";
+    branch.readOBJ(path_1);
+
+    fillVertices(branch, m_vbo_branch, m_vao_branch, num_branch_verts);
+
+    generateLSystem();
+    std::cout << "tree segments: " << m_treeData.size() << std::endl;
+
     makeFullscreenQuad();
     makeBloomFBO();
 
@@ -176,7 +193,18 @@ void Realtime::paintGL() {
             glBindVertexArray(object.vao);
             glDrawArrays(GL_TRIANGLES, 0, object.num_verts);
         }
+        else if (object.primitive.type == PrimitiveType::BRANCH){
+            glBindVertexArray(m_vao_branch);
+            glDrawArrays(GL_TRIANGLES, 0, num_branch_verts);
+        }
+        else if (object.primitive.type == PrimitiveType::LEAF){
+            glBindVertexArray(m_vao_leaf);
+            glDrawArrays(GL_TRIANGLES, 0, num_leaf_verts);
+        }
     }
+
+    drawLSystem();
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     glUseProgram(0);
@@ -218,6 +246,18 @@ void Realtime::createShapes() {
                 single_cube.updateParams(settings.shapeParameter1, settings.shapeParameter2);
                 fillVertices(single_cube, m_vbo_cube, m_vao_cube, num_cube_verts);
             }
+            else if (type == PrimitiveType::LEAF){
+                Obj leaf;
+                const std::string path = "src/obj/leaf_2.obj";
+                leaf.readOBJ(path);
+                fillVertices(leaf, m_vbo_leaf, m_vao_leaf, num_leaf_verts);
+            }
+            else if(type == PrimitiveType::BRANCH){
+                Obj branch;
+                const std::string path = "src/obj/branch.obj";
+                branch.readOBJ(path);
+                fillVertices(branch, m_vbo_branch, m_vao_branch, num_branch_verts);
+            }
             shape_exists.insert(int(type));
         }
 
@@ -230,6 +270,137 @@ void Realtime::createShapes() {
 
     old_param1 = settings.shapeParameter1;
     old_param2 = settings.shapeParameter2;
+}
+
+void Realtime::generateLSystem(){
+    std::cout<<"Generating tree"<<std::endl;
+    Lsystem tree = Lsystem();
+    int iterations = settings.shapeParameter1;
+
+    std::cout<<"Iterations: "<<iterations<<std::endl;
+
+    float step = 0.8f;
+    float angleStep = glm::radians(25.f);
+
+    // //Tree 1
+    // std::string axiom = "F";
+    // tree.insertRule('F', "F[+F]F[-F]F");
+
+    //Tree 2
+    std::string axiom = "X";
+    tree.insertRule('X', "F+[[X]-X]-F[-FX]+X");
+    tree.insertRule('F', "FF");
+
+    // //Tree 3
+    // std::string axiom = "F";
+    // tree.insertRule('F', "F[+FF][-FF]F[-F][+F]F");
+
+    // //Tree 4
+    // std::string axiom = "X";
+    // tree.insertRule('X', "F[+X][-X]FX");
+    // tree.insertRule('F', "FF");
+
+    ////Tree 5
+    // std::string axiom = "F";
+    // tree.insertRule('F', "FF[+F][-F]");
+
+    std::string word = tree.generate(axiom);
+
+    for(int i = 0; i < iterations; i++){
+        word = tree.generate(word);
+    }
+
+
+    Turtle head;
+    head.pos = glm::vec4(0,0,0,1);
+    head.angle = glm::radians(90.f);
+    head.ctm = glm::mat4(1);
+
+    glm::mat4 ctm(1);
+    glm::vec3 rotationAxis(1,0,0);
+    glm::vec3 scaleFac(0.9,0.9,0.9);
+
+    std::stack<Turtle> headStack;
+
+    float rand_yaw;
+    float randFac = settings.shapeParameter2 / 10.f;
+
+    // prevTreeLength = settings.shapeParameter1;
+    // prevTreeRand = settings.shapeParameter2;
+
+    for (char c : word) {
+        rand_yaw = randFac * (random()%360 + 1);
+        switch (c) {
+        case 'F':{
+
+            head.ctm = head.ctm * glm::rotate(glm::radians(rand_yaw), glm::vec3(0,1,0));
+
+            glm::mat4 segCTM = head.ctm * glm::translate(glm::vec3(0.f, step * 0.5f, 0.f));
+            ScenePrimitive prim = {PrimitiveType::BRANCH};
+            RenderShapeData new_branch = {prim, head.ctm};
+            new_branch.shape = new Obj();
+            m_treeData.push_back(new_branch);
+            head.ctm = head.ctm * glm::translate(glm::vec3(0.f, step, 0.f));
+            break;
+        }
+        case '+':
+            head.ctm = head.ctm * glm::rotate(angleStep, rotationAxis);
+            break;
+
+        case '-':
+            head.ctm = head.ctm * glm::rotate(-angleStep, rotationAxis);
+            break;
+
+        case '[':
+            headStack.push(head);
+            break;
+
+        case ']':{
+            head.ctm = head.ctm * glm::translate(glm::vec3(0.f, step*1.5, 0.f));
+            head.ctm = head.ctm * glm::rotate(glm::radians(90.f), glm::vec3(0,1,0)); //fix leaf orientation
+
+            ScenePrimitive prim = {PrimitiveType::LEAF};
+            RenderShapeData new_leaf = {prim, head.ctm};
+            new_leaf.shape = new Obj();
+            m_treeData.push_back(new_leaf);
+
+            if (!headStack.empty()) {
+                head = headStack.top();
+                headStack.pop();
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+}
+
+void Realtime::drawLSystem(){
+    for(int i = 0; i < m_treeData.size(); i++){
+        switch (m_treeData[i].primitive.type) {
+        case PrimitiveType::BRANCH:
+            glUniformMatrix4fv(model_ID, 1, GL_FALSE, &m_treeData[i].ctm[0][0]);
+
+            glBindVertexArray(m_vao_branch);
+            glDrawArrays(GL_TRIANGLES, 0, num_branch_verts);
+
+            glBindVertexArray(0);
+            break;
+        case PrimitiveType::LEAF:
+            //drawLeaf(m_treeData[i].second);
+            glUniformMatrix4fv(model_ID, 1, GL_FALSE, &m_treeData[i].ctm[0][0]);
+            //std::cout<<"Leaf drawn"<<std::endl;
+            glBindVertexArray(m_vao_leaf);
+            glDrawArrays(GL_TRIANGLES, 0, num_leaf_verts);
+
+            glBindVertexArray(0);
+
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void Realtime::fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts) {
