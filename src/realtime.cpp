@@ -167,13 +167,14 @@ void Realtime::initializeGL() {
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
 
     //fire
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     createCircle(m_tessalations, -0.f);
     //instance some particles
     for(int i = -m_rows; i<m_rows;++i) {
         for(int j = -m_cols; j<m_cols;++j) {
-            Particle p{glm::vec3{i*(m_offset), j*(m_offset)+2.f,0}};
+            float z = ((rand() % 1000) / 1000.f - 0.5f) * 0.15f;  // ±0.075 depth, chat
+            Particle p{glm::vec3{i*(m_offset), j*(m_offset)+2.f,z}};
             m_particles.push_back(p);
         }
     }
@@ -241,6 +242,9 @@ bool checkOverlap(glm::vec2 c1, glm::vec2 c2, float r1, float r2) {
 void Realtime::fireLoop() {
     //movement + gravity
     for(int a = 0; a<m_particles.size(); ++a) {
+        m_particles[a].velocity.z += 0.0003f * sin(a + 0.01 * 10.0f);
+
+
         int index1 = 3*a;
         //gravity
         m_particles[a].velocity.y -= m_gravity;
@@ -341,8 +345,8 @@ void Realtime::fireLoop() {
                     m_particles[b].heat = glm::min(1.f, m_particles[b].heat + m_heat_transfer);
 
                     //upward force due to heat; once reach threshold
-                    if(m_particles[a].heat > 0.7f) {
-                        m_particles[a].velocity.y += 0.0005*m_particles[a].heat;
+                    if(m_particles[a].heat > 0.8f) {
+                        m_particles[a].velocity.y += 0.0004*m_particles[a].heat;
                     }
                 }
             }
@@ -361,7 +365,7 @@ void Realtime::fireLoop() {
             m_color_data[index1 + 1] = 0;
             m_color_data[index1 + 2] = 0;
             m_particles[a].velocity.x = 0.001f;
-            m_particles[a].velocity.y = -0.02f;
+            m_particles[a].velocity.y = -0.09f;
         }
         if(m_pos_data[index1 + 0] > m_side_bound - m_radius) {
             m_pos_data[index1 + 0] = m_side_bound - m_radius;
@@ -371,7 +375,7 @@ void Realtime::fireLoop() {
             m_color_data[index1 + 1] = 0;
             m_color_data[index1 + 2] = 0;
             m_particles[a].velocity.x = -0.001f;
-            m_particles[a].velocity.y = -0.02f;
+            m_particles[a].velocity.y = -0.09f;
         }
     }
 
@@ -413,6 +417,7 @@ void Realtime::paintGL() {
     // glDepthMask(GL_TRUE);
 
     glUseProgram(m_shader);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Need view, proj, and model in shader for mvp matrix
     //glm::mat4 view_mat = m_camera.getViewMatrix();
@@ -468,7 +473,8 @@ void Realtime::paintGL() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(m_fire_shader);
     glBindVertexArray(m_fire_vao);
 
