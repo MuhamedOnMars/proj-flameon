@@ -336,7 +336,12 @@ void Realtime::generateLSystem(){
             head.ctm = head.ctm * glm::rotate(glm::radians(rand_yaw), glm::vec3(0,1,0));
 
             glm::mat4 segCTM = head.ctm * glm::translate(glm::vec3(0.f, step * 0.5f, 0.f));
-            ScenePrimitive prim = {PrimitiveType::BRANCH};
+
+            SceneMaterial material;
+            material.cDiffuse = glm::vec4(0.5f, 0.0f, 0.7f, 1.0f);
+            material.cSpecular = glm::vec4(0.5, 0.5, 0.5, 1.0);
+            material.cAmbient = glm::vec4(0.5f, 0.0f, 0.5f, 1.0f);
+            ScenePrimitive prim = {PrimitiveType::BRANCH, material};
             RenderShapeData new_branch = {prim, head.ctm};
             new_branch.shape = new Obj();
             m_treeData.push_back(new_branch);
@@ -359,7 +364,11 @@ void Realtime::generateLSystem(){
             head.ctm = head.ctm * glm::translate(glm::vec3(0.f, step*1.5, 0.f));
             head.ctm = head.ctm * glm::rotate(glm::radians(90.f), glm::vec3(0,1,0)); //fix leaf orientation
 
-            ScenePrimitive prim = {PrimitiveType::LEAF};
+            SceneMaterial material;
+            material.cDiffuse = glm::vec4(0.0f, 0.9f, 0.1f, 1.0f);
+            material.cSpecular = glm::vec4(0.5, 0.5, 0.5, 1.0);
+            material.cAmbient = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
+            ScenePrimitive prim = {PrimitiveType::LEAF, material};
             RenderShapeData new_leaf = {prim, head.ctm};
             new_leaf.shape = new Obj();
             m_treeData.push_back(new_leaf);
@@ -378,6 +387,7 @@ void Realtime::generateLSystem(){
 
 void Realtime::drawLSystem(){
     for(int i = 0; i < m_treeData.size(); i++){
+        phongIllumination(m_treeData[i]);
         switch (m_treeData[i].primitive.type) {
         case PrimitiveType::BRANCH:
             glUniformMatrix4fv(model_ID, 1, GL_FALSE, &m_treeData[i].ctm[0][0]);
