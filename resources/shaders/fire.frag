@@ -5,6 +5,7 @@ out vec4 fragColor;
 out vec4 brightColor;
 
 void main() {
-   fragColor = vec4(col, 1.0);
-   brightColor = vec4(col, 1.f);
+   float alpha = 0.9f;
+   fragColor = vec4(col, alpha);
+   brightColor = vec4(col, alpha);
 }

@@ -167,11 +167,13 @@ void Realtime::initializeGL() {
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
 
     //fire
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     createCircle(m_tessalations, -0.f);
     //instance some particles
     for(int i = -m_rows; i<m_rows;++i) {
         for(int j = -m_cols; j<m_cols;++j) {
-            Particle p{glm::vec3{i*(m_offset), j*(m_offset),0}};
+            Particle p{glm::vec3{i*(m_offset), j*(m_offset)+2.f,0}};
             m_particles.push_back(p);
         }
     }
@@ -247,8 +249,8 @@ void Realtime::fireLoop() {
         m_pos_data[index1 + 0] += m_particles[a].velocity.x;
 
         //ground check
-        if(m_pos_data[index1 + 1] + m_particles[a].velocity.y < -1 + m_radius) {
-            m_pos_data[index1 +1] = -1 +m_radius;
+        if(m_pos_data[index1 + 1] + m_particles[a].velocity.y < -m_ground_bound + m_radius) {
+            m_pos_data[index1 +1] = -m_ground_bound +m_radius;
             m_particles[a].velocity.y *= -m_bounce_factor;
             m_particles[a].velocity.x *= 0.95f;
         }
@@ -359,6 +361,7 @@ void Realtime::fireLoop() {
             m_color_data[index1 + 1] = 0;
             m_color_data[index1 + 2] = 0;
             m_particles[a].velocity.x = 0.001f;
+            m_particles[a].velocity.y = -0.02f;
         }
         if(m_pos_data[index1 + 0] > m_side_bound - m_radius) {
             m_pos_data[index1 + 0] = m_side_bound - m_radius;
@@ -368,6 +371,7 @@ void Realtime::fireLoop() {
             m_color_data[index1 + 1] = 0;
             m_color_data[index1 + 2] = 0;
             m_particles[a].velocity.x = -0.001f;
+            m_particles[a].velocity.y = -0.02f;
         }
     }
 
@@ -385,26 +389,28 @@ void Realtime::paintGL() {
     glViewport(0, 0, m_fbo_width, m_fbo_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_fire_shader);
-    glBindVertexArray(m_fire_vao);
+    // glUseProgram(m_fire_shader);
+    // glBindVertexArray(m_fire_vao);
 
-    glm::mat4 model = glm::mat4{1.f};
+    // glm::mat4 model = glm::mat4{1.f};
 
     glm::mat4 view_mat = m_camera.getViewMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
+    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
 
     glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
-    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
+    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
 
-    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
+    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
 
-    fireLoop();
+    // glDepthMask(GL_FALSE);
+    // fireLoop();
 
-    // draw triangles
-    glVertexAttribDivisor(0,0);
-    glVertexAttribDivisor(1,1);
-    glVertexAttribDivisor(2,1);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
+    // // draw triangles
+    // glVertexAttribDivisor(0,0);
+    // glVertexAttribDivisor(1,1);
+    // glVertexAttribDivisor(2,1);
+    // glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
+    // glDepthMask(GL_TRUE);
 
     glUseProgram(m_shader);
 
@@ -461,6 +467,32 @@ void Realtime::paintGL() {
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+
+    glUseProgram(m_fire_shader);
+    glBindVertexArray(m_fire_vao);
+
+    glm::mat4 model = glm::mat4{1.f};
+
+    // glm::mat4 view_mat = m_camera.getViewMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
+
+    // glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
+
+    glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
+
+    glDepthMask(GL_FALSE);
+    fireLoop();
+
+    // draw triangles
+    glVertexAttribDivisor(0,0);
+    glVertexAttribDivisor(1,1);
+    glVertexAttribDivisor(2,1);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
+    glDepthMask(GL_TRUE);
+
+
     glUseProgram(0);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);

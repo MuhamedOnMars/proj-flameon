@@ -123,15 +123,16 @@ private:
 
     //particles
     int m_maxParticles = 50000;
-    int m_rows = 52;
-    int m_cols = 20;
+    int m_rows = 45;
+    int m_cols = 25;
     float m_decay = 0.001;
 
     //heat
     float m_heat_transfer = 0.5;
     float m_heat_decay = 0.1;
 
-    float m_side_bound = 2.f;
+    float m_side_bound = 0.9f;
+    float m_ground_bound = 0.0f;
     float m_offset = 0.03;
 
     /**
