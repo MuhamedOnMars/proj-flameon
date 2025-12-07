@@ -175,6 +175,7 @@ void Realtime::initializeGL() {
         for(int j = -m_cols; j<m_cols;++j) {
             float z = ((rand() % 1000) / 1000.f - 0.5f) * 0.15f;  // ±0.075 depth, chat
             Particle p{glm::vec3{i*(m_offset), j*(m_offset)+2.f,z}};
+            p.heat = 0.4f + 0.3f * ((rand()%1000)/1000.f); //random heat on spawn, chat
             m_particles.push_back(p);
         }
     }
@@ -242,7 +243,10 @@ bool checkOverlap(glm::vec2 c1, glm::vec2 c2, float r1, float r2) {
 void Realtime::fireLoop() {
     //movement + gravity
     for(int a = 0; a<m_particles.size(); ++a) {
-        m_particles[a].velocity.z += 0.0003f * sin(a + 0.01 * 10.0f);
+        //m_particles[a].velocity.z += 0.0003f * sin(a + 0.01 * 10.0f);
+        float wiggle = 0.0005f;
+        m_particles[a].velocity.x += wiggle * (rand()%2000/1000.f - 1.f);
+
 
 
         int index1 = 3*a;
@@ -346,7 +350,7 @@ void Realtime::fireLoop() {
 
                     //upward force due to heat; once reach threshold
                     if(m_particles[a].heat > 0.8f) {
-                        m_particles[a].velocity.y += 0.0004*m_particles[a].heat;
+                        m_particles[a].velocity.y += 0.0002*m_particles[a].heat;
                     }
                 }
             }
@@ -361,9 +365,10 @@ void Realtime::fireLoop() {
             m_pos_data[index1 + 0] = -m_side_bound + m_radius;
 
             //horizontal bounce for recycling particles
-            m_color_data[index1 + 0] = 0;
-            m_color_data[index1 + 1] = 0;
-            m_color_data[index1 + 2] = 0;
+            // m_color_data[index1 + 0] = 0;
+            // m_color_data[index1 + 1] = 0;
+            // m_color_data[index1 + 2] = 0;
+            m_particles[a].heat = 0;
             m_particles[a].velocity.x = 0.001f;
             m_particles[a].velocity.y = -0.09f;
         }
@@ -371,9 +376,10 @@ void Realtime::fireLoop() {
             m_pos_data[index1 + 0] = m_side_bound - m_radius;
 
             //horizontal bounce for recycling particles
-            m_color_data[index1 + 0] = 0;
-            m_color_data[index1 + 1] = 0;
-            m_color_data[index1 + 2] = 0;
+            // m_color_data[index1 + 0] = 0;
+            // m_color_data[index1 + 1] = 0;
+            // m_color_data[index1 + 2] = 0;
+            m_particles[a].heat = 0;
             m_particles[a].velocity.x = -0.001f;
             m_particles[a].velocity.y = -0.09f;
         }
