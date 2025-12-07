@@ -91,23 +91,6 @@ void Realtime::makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bo
     insertVec3(m_vertexData, bottomRight);
 }
 
-// void Realtime::makeCircleSlice(float currentTheta, float nextTheta, float z) {
-//     float r_step = m_radius/1.f;
-//     for (int i = 0; i<=m_radius; ++i) {
-//         float r1 = m_radius - i*r_step;
-//         float r2 = m_radius - (i+1)*r_step;
-
-//         glm::vec3 bottomLeft = {r1*cos(currentTheta),r1*sin(currentTheta),z};
-//         glm::vec3 topLeft = {r2*cos(currentTheta),r2*sin(currentTheta),z};
-//         glm::vec3 topRight = {r2*cos(nextTheta),r2*sin(nextTheta),z};
-//         glm::vec3 bottomRight = {r1*cos(nextTheta),r1*sin(nextTheta),z};
-
-//         makeCircleTile(topLeft, bottomLeft, bottomRight);
-//         makeCircleTile(bottomRight, topRight, topLeft);
-//     }
-// }
-
-//chat replacement for above
 void Realtime::makeCircleSlice(float currentTheta, float nextTheta, float z) {
     if (m_radius <= 0.f) return; // nothing to draw
 
@@ -166,11 +149,11 @@ void Realtime::initializeGL() {
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
 
+    createUniforms();
+
     //fire
-    //glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     createCircle(m_tessalations, -0.f);
-    //instance some particles
+    //instance particles
     for(int i = -m_rows; i<m_rows;++i) {
         for(int j = -m_cols; j<m_cols;++j) {
             float z = ((rand() % 1000) / 1000.f - 0.5f) * 0.15f;  // ±0.075 depth, chat
@@ -179,8 +162,6 @@ void Realtime::initializeGL() {
             m_particles.push_back(p);
         }
     }
-    // Particle p{glm::vec3{0,0,0}};
-    // m_particles.push_back(p);
 
     //initial positions/offsets + colors
     for(int i = 0; i<m_particles.size();++i) {
@@ -192,8 +173,6 @@ void Realtime::initializeGL() {
         m_color_data.push_back(m_particles[i].color.y);
         m_color_data.push_back(m_particles[i].color.z);
     }
-
-    createUniforms();
 
     //positions/offsets
     glGenBuffers(GLuint(1.f), &m_pos_vbo);
@@ -243,11 +222,8 @@ bool checkOverlap(glm::vec2 c1, glm::vec2 c2, float r1, float r2) {
 void Realtime::fireLoop() {
     //movement + gravity
     for(int a = 0; a<m_particles.size(); ++a) {
-        //m_particles[a].velocity.z += 0.0003f * sin(a + 0.01 * 10.0f);
         float wiggle = 0.0005f;
-        m_particles[a].velocity.x += wiggle * (rand()%2000/1000.f - 1.f);
-
-
+        m_particles[a].velocity.x += wiggle * (rand()%2000/1000.f - 1.f); //jitter
 
         int index1 = 3*a;
         //gravity
@@ -365,9 +341,6 @@ void Realtime::fireLoop() {
             m_pos_data[index1 + 0] = -m_side_bound + m_radius;
 
             //horizontal bounce for recycling particles
-            // m_color_data[index1 + 0] = 0;
-            // m_color_data[index1 + 1] = 0;
-            // m_color_data[index1 + 2] = 0;
             m_particles[a].heat = 0;
             m_particles[a].velocity.x = 0.001f;
             m_particles[a].velocity.y = -0.09f;
@@ -376,9 +349,6 @@ void Realtime::fireLoop() {
             m_pos_data[index1 + 0] = m_side_bound - m_radius;
 
             //horizontal bounce for recycling particles
-            // m_color_data[index1 + 0] = 0;
-            // m_color_data[index1 + 1] = 0;
-            // m_color_data[index1 + 2] = 0;
             m_particles[a].heat = 0;
             m_particles[a].velocity.x = -0.001f;
             m_particles[a].velocity.y = -0.09f;
@@ -399,34 +369,13 @@ void Realtime::paintGL() {
     glViewport(0, 0, m_fbo_width, m_fbo_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // glUseProgram(m_fire_shader);
-    // glBindVertexArray(m_fire_vao);
-
-    // glm::mat4 model = glm::mat4{1.f};
-
     glm::mat4 view_mat = m_camera.getViewMatrix();
-    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
 
     glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
-    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
-
-    // glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
-
-    // glDepthMask(GL_FALSE);
-    // fireLoop();
-
-    // // draw triangles
-    // glVertexAttribDivisor(0,0);
-    // glVertexAttribDivisor(1,1);
-    // glVertexAttribDivisor(2,1);
-    // glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
-    // glDepthMask(GL_TRUE);
 
     glUseProgram(m_shader);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Need view, proj, and model in shader for mvp matrix
-    //glm::mat4 view_mat = m_camera.getViewMatrix();
     glUniformMatrix4fv(view_ID, 1, GL_FALSE, &view_mat[0][0]);
 
     glm::vec3 camera_pos = glm::vec3(glm::inverse(view_mat)[3]);
@@ -486,10 +435,8 @@ void Realtime::paintGL() {
 
     glm::mat4 model = glm::mat4{1.f};
 
-    // glm::mat4 view_mat = m_camera.getViewMatrix();
     glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "view_mat"), 1, GL_FALSE, &view_mat[0][0]);
 
-    // glm::mat4 proj_mat = m_camera.getPerspectiveMatrix();
     glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "proj_mat"), 1, GL_FALSE, &proj_mat[0][0]);
 
     glUniformMatrix4fv(glGetUniformLocation(m_fire_shader, "model_mat"), 1, GL_FALSE, &model[0][0]);
@@ -503,7 +450,6 @@ void Realtime::paintGL() {
     glVertexAttribDivisor(2,1);
     glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
     glDepthMask(GL_TRUE);
-
 
     glUseProgram(0);
 

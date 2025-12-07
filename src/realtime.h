@@ -90,17 +90,19 @@ private:
     void createUniforms();
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
 
-    //fire
+    // Fire variables and functions
     void fireLoop();
-    int m_tessalations = 4;
-    GLuint m_fire_shader;
-    GLuint m_fire_vbo;    // Stores id of VBO
-    GLuint m_fire_vao;    // Stores id of VAO
-    std::vector<float> m_vertexData;
-    float m_radius = 0.008f;
     void createCircle(float tessalations, float z);
     void makeCircleSlice(float currentTheta, float nextTheta, float z);
     void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
+
+    int m_tessalations = 4;
+    GLuint m_fire_shader;
+    GLuint m_fire_vbo;
+    GLuint m_fire_vao;
+    std::vector<float> m_vertexData;
+
+    float m_radius = 0.008f;
     struct Particle {
         glm::vec3 position, velocity;
         glm::vec3 color = glm::vec3{0,1,0};
@@ -118,7 +120,7 @@ private:
     float m_gravity = 0.0004f;
 
     //collisions
-    int m_collision_depth = 2;
+    int m_collision_depth = 1;
     float m_bounce_factor = 0.5;
 
     //particles
@@ -129,8 +131,9 @@ private:
 
     //heat
     float m_heat_transfer = 0.5;
-    float m_heat_decay = 0.3;
+    float m_heat_decay = 0.25;
 
+    //bounds
     float m_side_bound = 0.8f;
     float m_ground_bound = 0.0f;
     float m_offset = 0.03;
