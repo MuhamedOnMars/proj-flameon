@@ -97,7 +97,7 @@ private:
     GLuint m_fire_vbo;    // Stores id of VBO
     GLuint m_fire_vao;    // Stores id of VAO
     std::vector<float> m_vertexData;
-    float m_radius = 0.005f;
+    float m_radius = 0.006f;
     void createCircle(float tessalations, float z);
     void makeCircleSlice(float currentTheta, float nextTheta, float z);
     void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
@@ -123,7 +123,7 @@ private:
 
     //particles
     int m_maxParticles = 50000;
-    int m_rows = 45;
+    int m_rows = 40;
     int m_cols = 25;
     float m_decay = 0.001;
 
@@ -131,7 +131,7 @@ private:
     float m_heat_transfer = 0.5;
     float m_heat_decay = 0.1;
 
-    float m_side_bound = 0.9f;
+    float m_side_bound = 0.7f;
     float m_ground_bound = 0.0f;
     float m_offset = 0.03;
 

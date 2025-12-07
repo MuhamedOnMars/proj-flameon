@@ -342,7 +342,7 @@ void Realtime::fireLoop() {
 
                     //upward force due to heat; once reach threshold
                     if(m_particles[a].heat > 0.7f) {
-                        m_particles[a].velocity.y += 0.0004f;
+                        m_particles[a].velocity.y += 0.0005*m_particles[a].heat;
                     }
                 }
             }
