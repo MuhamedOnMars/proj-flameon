@@ -29,6 +29,7 @@ public:
     void sceneChanged();
     void settingsChanged();
     void saveViewportImage(std::string filePath);
+    void exportTreeToOBJ(const std::string &filepath);
 
 public slots:
     void tick(QTimerEvent* event);                      // Called once per tick of m_timer
@@ -115,6 +116,11 @@ private:
     void initBranchGeometryAndInstances();
     void initLeafGeometryAndInstances();
     void drawSkydome(glm::vec3 camera_pos);
+
+
+    //OBJ export
+    // std::vector<GLfloat> m_branchVerts;
+    // std::vector<GLfloat> m_leafVerts;
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments

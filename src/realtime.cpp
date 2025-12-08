@@ -19,6 +19,8 @@
 
  #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/transform.hpp>
+#include <fstream>
+#include <glm/gtc/matrix_inverse.hpp>
 
 // ================== Rendering the Scene!
 
@@ -129,7 +131,7 @@ void Realtime::initializeGL() {
     fillVertices(skySphere, m_vbo_sky, m_vao_sky, num_sky_verts);
 
     Obj leaf;
-    const std::string path = "src/obj/leaf_2.obj";
+    const std::string path = "src/obj/leaf_1.obj";
     leaf.readOBJ(path);
     fillVertices(leaf, m_vbo_leaf, m_vao_leaf, num_leaf_verts);
 
@@ -272,13 +274,13 @@ void Realtime::createShapes() {
             }
             else if (type == PrimitiveType::LEAF){
                 Obj leaf;
-                const std::string path = "src/obj/leaf_2.obj";
+                const std::string path = "src/obj/leaf_1.obj";
                 leaf.readOBJ(path);
                 fillVertices(leaf, m_vbo_leaf, m_vao_leaf, num_leaf_verts);
             }
             else if(type == PrimitiveType::BRANCH){
                 Obj branch;
-                const std::string path = "src/obj/branch.obj";
+                const std::string path = "src/obj/branch_2.obj";
                 branch.readOBJ(path);
                 fillVertices(branch, m_vbo_branch, m_vao_branch, num_branch_verts);
             }
@@ -345,13 +347,13 @@ void Realtime::generateLSystem(){
     std::stack<Turtle> headStack;
 
     float rand_yaw;
-    float randFac = settings.shapeParameter2 / 10.f;
+    float randFac = settings.shapeParameter2 / 1.f;
 
     // prevTreeLength = settings.shapeParameter1;
     // prevTreeRand = settings.shapeParameter2;
 
     for (char c : word) {
-        rand_yaw = randFac * (random()%360 + 1);
+        rand_yaw = 15 * (random()%360 + 1);
         switch (c) {
         case 'F':{
 
@@ -1086,6 +1088,10 @@ void Realtime::timerEvent(QTimerEvent *event) {
     if (m_keyMap[Qt::Key_Control]) {
         final_pos -= up * amount;
     }
+
+    if (m_keyMap[Qt::Key_O]) { // or whatever
+        exportTreeToOBJ("tree_export.obj");
+    }
     cam.pos = glm::vec4(final_pos, 1.0f);
 
     update(); // asks for a PaintGL() call to occur
@@ -1153,4 +1159,114 @@ void Realtime::saveViewportImage(std::string filePath) {
     glDeleteTextures(1, &texture);
     glDeleteRenderbuffers(1, &rbo);
     glDeleteFramebuffers(1, &fbo);
+}
+
+void Realtime::exportTreeToOBJ(const std::string &filepath) {
+    // Make sure we actually HAVE a tree
+    if (m_treeData.empty()) {
+        std::cerr << "exportTreeToOBJ: m_treeData is empty, call generateLSystem() first.\n";
+        return;
+    }
+
+    std::ofstream out(filepath);
+    if (!out) {
+        std::cerr << "Failed to open " << filepath << " for writing\n";
+        return;
+    }
+
+    // 1) Load base branch + leaf geometry (local space)
+    Obj branchObj;
+    Obj leafObj;
+
+    // Use the same files you use for rendering
+    const std::string branchPath = "src/obj/branch_new.obj";
+    const std::string leafPath   = "src/obj/leaf_2.obj";
+
+    branchObj.readOBJ(branchPath);
+    leafObj.readOBJ(leafPath);
+
+    std::vector<GLfloat> branchVerts = branchObj.generateShape(); // [px,py,pz, nx,ny,nz, ...]
+    std::vector<GLfloat> leafVerts   = leafObj.generateShape();
+
+    auto splitVerts = [](const std::vector<GLfloat> &verts,
+                         std::vector<glm::vec3> &positions,
+                         std::vector<glm::vec3> &normals) {
+        positions.clear();
+        normals.clear();
+        positions.reserve(verts.size() / 6);
+        normals.reserve(verts.size() / 6);
+
+        for (size_t i = 0; i < verts.size(); i += 6) {
+            positions.emplace_back(verts[i + 0], verts[i + 1], verts[i + 2]);
+            normals.emplace_back  (verts[i + 3], verts[i + 4], verts[i + 5]);
+        }
+    };
+
+    std::vector<glm::vec3> branchPos, branchNorm;
+    std::vector<glm::vec3> leafPos, leafNorm;
+    splitVerts(branchVerts, branchPos, branchNorm);
+    splitVerts(leafVerts,   leafPos,   leafNorm);
+
+    // 2) Walk over all L-system nodes and bake them out
+    int globalVertexOffset = 1; // OBJ is 1-based
+
+    auto writeInstanceMesh = [&](const RenderShapeData &node,
+                                 const std::vector<glm::vec3> &basePos,
+                                 const std::vector<glm::vec3> &baseNorm,
+                                 int &globalOffset)
+    {
+        glm::mat4 M = node.ctm;
+        glm::mat3 N = glm::transpose(glm::inverse(glm::mat3(M)));
+
+        int localVertCount = static_cast<int>(basePos.size());
+
+        // Optionally write a group/object name so it’s easier to inspect later
+        // out << "g ";
+        // if (node.primitive.type == PrimitiveType::BRANCH) out << "branch\n";
+        // else out << "leaf\n";
+
+        // 2.1) vertices + normals
+        for (int i = 0; i < localVertCount; ++i) {
+            glm::vec3 p = basePos[i];
+            glm::vec3 n = baseNorm[i];
+
+            glm::vec4 wp4 = M * glm::vec4(p, 1.0f);
+            glm::vec3 wp  = glm::vec3(wp4) / wp4.w;
+
+            glm::vec3 wn  = glm::normalize(N * n);
+
+            out << "v "  << wp.x << " " << wp.y << " " << wp.z << "\n";
+            out << "vn " << wn.x << " " << wn.y << " " << wn.z << "\n";
+        }
+
+        // 2.2) faces: we assume 3 verts per triangle in order
+        for (int i = 0; i < localVertCount; i += 3) {
+            int i0 = globalOffset + i;
+            int i1 = globalOffset + i + 1;
+            int i2 = globalOffset + i + 2;
+
+            // f v//vn v//vn v//vn  (same index used for v and vn)
+            out << "f "
+                << i0 << "//" << i0 << " "
+                << i1 << "//" << i1 << " "
+                << i2 << "//" << i2 << "\n";
+        }
+
+        globalOffset += localVertCount;
+    };
+
+    for (const RenderShapeData &node : m_treeData) {
+        if (node.primitive.type == PrimitiveType::BRANCH) {
+            if (!branchPos.empty()) {
+                writeInstanceMesh(node, branchPos, branchNorm, globalVertexOffset);
+            }
+        } else if (node.primitive.type == PrimitiveType::LEAF) {
+            if (!leafPos.empty()) {
+                writeInstanceMesh(node, leafPos, leafNorm, globalVertexOffset);
+            }
+        }
+    }
+
+    out.close();
+    std::cout << "Exported tree to OBJ: " << filepath << std::endl;
 }
