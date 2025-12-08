@@ -32,9 +32,21 @@ uniform Light lights[8];
 uniform float max_dist;
 uniform float min_dist;
 
+//skydome
+uniform bool u_isSky;
+uniform vec3 u_skyTopColor;
+uniform vec3 u_skyBottomColor;
+
 void main() {
     vec3 norm = normalize(world_norm);
     fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    if (u_isSky) {
+            float t = clamp(norm.y * 0.5 + 0.5, 0.0, 1.0);
+            vec3 col = mix(u_skyBottomColor, u_skyTopColor, t);
+            fragColor = vec4(col, 1.0);
+            return;
+        }
 
     // Ambient
     vec3 illumination = ka * vec3(ambient);

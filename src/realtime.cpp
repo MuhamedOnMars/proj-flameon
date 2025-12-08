@@ -56,6 +56,9 @@ void Realtime::finish() {
     glDeleteBuffers(1, &m_vbo_cube);
     glDeleteVertexArrays(1, &m_vao_cube);
 
+    glDeleteBuffers(1, &m_vbo_sky);
+    glDeleteVertexArrays(1, &m_vao_sky);
+
     std::vector<RenderShapeData> &shapes = m_renderData.shapes;
     for (int k = 0; k < shapes.size(); k++) {
         RenderShapeData& object = shapes[k];
@@ -71,6 +74,7 @@ void Realtime::finish() {
     glDeleteProgram(m_shader);
     glDeleteProgram(m_shader_bloom);
     glDeleteProgram(m_shader_blur);
+    glDeleteProgram(m_shader_kuwahara);
 
     glDeleteTextures(2, m_color_buffers);
     glDeleteTextures(2, m_pingpong_color);
@@ -116,6 +120,13 @@ void Realtime::initializeGL() {
     m_shader_bloom = ShaderLoader::createShaderProgram(":/resources/shaders/bloom.vert", ":/resources/shaders/bloom.frag");
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
     createUniforms();
+    m_shader_kuwahara = ShaderLoader::createShaderProgram("/Users/christophermok/Desktop/cs1230/projects/proj-flameon/resources/shaders/kuwahara.vert",
+                                                          "/Users/christophermok/Desktop/cs1230/projects/proj-flameon/resources/shaders/kuwahara.frag");
+
+    Sphere skySphere;
+    // Reasonable tessellation – doesn’t need to match main spheres
+    skySphere.updateParams(40, 40);
+    fillVertices(skySphere, m_vbo_sky, m_vao_sky, num_sky_verts);
 
     Obj leaf;
     const std::string path = "src/obj/leaf_2.obj";
@@ -125,11 +136,17 @@ void Realtime::initializeGL() {
     Obj branch;
     const std::string path_1 = "src/obj/branch_new.obj";
     branch.readOBJ(path_1);
-
     fillVertices(branch, m_vbo_branch, m_vao_branch, num_branch_verts);
 
+    // initBranchGeometryAndInstances();
+    // initLeafGeometryAndInstances();
+
     generateLSystem();
-    std::cout << "tree segments: " << m_treeData.size() << std::endl;
+
+    //setupTreeInstances();
+    // std::cout << "branches instances: " << m_numBranchInstances << std::endl;
+    // std::cout << "leaf instances: "    << m_numLeafInstances   << std::endl;
+    // std::cout << "tree segments: " << m_treeData.size() << std::endl;
 
     makeFullscreenQuad();
     makeBloomFBO();
@@ -164,11 +181,16 @@ void Realtime::paintGL() {
     glUniform1f(min_fog_ID, settings.fogMin);
     glUniform1f(max_fog_ID, settings.fogMax);
 
+    drawSkydome(camera_pos);
+
     std::vector<RenderShapeData> &object_list = m_renderData.shapes;
     for (int k = 0; k < object_list.size(); k++) {
         RenderShapeData& object = object_list[k];
 
         glUniformMatrix4fv(model_ID, 1, GL_FALSE, &object.ctm[0][0]);
+
+        //Don't use instance rendering for other objects
+        glUniform1i(useInstancing_ID, 0);
 
         phongIllumination(object);
 
@@ -203,6 +225,7 @@ void Realtime::paintGL() {
         }
     }
 
+    glUniform1i(useInstancing_ID, 1);
     drawLSystem();
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -213,7 +236,8 @@ void Realtime::paintGL() {
     glViewport(0, 0, m_screen_width, m_screen_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    setBloom();
+    //setBloom();
+    setKuwahara();
 }
 
 void Realtime::createShapes() {
@@ -270,12 +294,19 @@ void Realtime::createShapes() {
 
     old_param1 = settings.shapeParameter1;
     old_param2 = settings.shapeParameter2;
+
+    //Tree instance rendering
+    // if (m_branchInstanceVBO != 0 || m_leafInstanceVBO != 0) {
+    //     setupTreeInstances();
+    // }
 }
 
 void Realtime::generateLSystem(){
+    m_treeData.clear();
     std::cout<<"Generating tree"<<std::endl;
     Lsystem tree = Lsystem();
-    int iterations = settings.shapeParameter1;
+    //int iterations = settings.shapeParameter1;
+    int iterations = 4;
 
     std::cout<<"Iterations: "<<iterations<<std::endl;
 
@@ -294,15 +325,6 @@ void Realtime::generateLSystem(){
     // //Tree 3
     // std::string axiom = "F";
     // tree.insertRule('F', "F[+FF][-FF]F[-F][+F]F");
-
-    // //Tree 4
-    // std::string axiom = "X";
-    // tree.insertRule('X', "F[+X][-X]FX");
-    // tree.insertRule('F', "FF");
-
-    ////Tree 5
-    // std::string axiom = "F";
-    // tree.insertRule('F', "FF[+F][-F]");
 
     std::string word = tree.generate(axiom);
 
@@ -341,6 +363,7 @@ void Realtime::generateLSystem(){
             material.cDiffuse = glm::vec4(0.5f, 0.0f, 0.7f, 1.0f);
             material.cSpecular = glm::vec4(0.5, 0.5, 0.5, 1.0);
             material.cAmbient = glm::vec4(0.5f, 0.0f, 0.5f, 1.0f);
+            m_branchMaterial = material;
             ScenePrimitive prim = {PrimitiveType::BRANCH, material};
             RenderShapeData new_branch = {prim, head.ctm};
             new_branch.shape = new Obj();
@@ -368,6 +391,8 @@ void Realtime::generateLSystem(){
             material.cDiffuse = glm::vec4(0.0f, 0.9f, 0.1f, 1.0f);
             material.cSpecular = glm::vec4(0.5, 0.5, 0.5, 1.0);
             material.cAmbient = glm::vec4(0.0f, 0.5f, 0.2f, 1.0f);
+            //
+            m_leafMaterial = material;
             ScenePrimitive prim = {PrimitiveType::LEAF, material};
             RenderShapeData new_leaf = {prim, head.ctm};
             new_leaf.shape = new Obj();
@@ -383,6 +408,216 @@ void Realtime::generateLSystem(){
             break;
         }
     }
+
+    // //INSTANCE RENDERING CODE START
+    // std::vector<glm::mat4> branchMatrices;
+    // std::vector<glm::mat4> leafMatrices;
+
+    // branchMatrices.reserve(m_treeData.size());
+    // leafMatrices.reserve(m_treeData.size());
+
+    // for (const RenderShapeData &node : m_treeData) {
+    //     if (node.primitive.type == PrimitiveType::BRANCH) {
+    //         branchMatrices.push_back(node.ctm);
+    //     } else if (node.primitive.type == PrimitiveType::LEAF) {
+    //         leafMatrices.push_back(node.ctm);
+    //     }
+    // }
+
+    // m_numBranchInstances = static_cast<int>(branchMatrices.size());
+    // m_numLeafInstances   = static_cast<int>(leafMatrices.size());
+
+    // // ---- Upload instance buffers ----
+    // // BRANCH
+    // if (!branchMatrices.empty()) {
+    //     if (m_branchInstanceVBO == 0) {
+    //         glGenBuffers(1, &m_branchInstanceVBO);
+    //     }
+    //     glBindBuffer(GL_ARRAY_BUFFER, m_branchInstanceVBO);
+    //     glBufferData(GL_ARRAY_BUFFER,
+    //                  branchMatrices.size() * sizeof(glm::mat4),
+    //                  branchMatrices.data(),
+    //                  GL_STATIC_DRAW);
+    // }
+
+    // // LEAF
+    // if (!leafMatrices.empty()) {
+    //     if (m_leafInstanceVBO == 0) {
+    //         glGenBuffers(1, &m_leafInstanceVBO);
+    //     }
+    //     glBindBuffer(GL_ARRAY_BUFFER, m_leafInstanceVBO);
+    //     glBufferData(GL_ARRAY_BUFFER,
+    //                  leafMatrices.size() * sizeof(glm::mat4),
+    //                  leafMatrices.data(),
+    //                  GL_STATIC_DRAW);
+    // }
+
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Realtime::initBranchGeometryAndInstances() {
+    // 1. Load branch geometry into a std::vector<GLfloat>
+    Obj branch;
+    const std::string path = "src/obj/branch_new.obj";
+    branch.readOBJ(path);
+    std::vector<GLfloat> verts = branch.generateShape();
+    num_branch_verts = verts.size() / 6; // pos+normal
+
+    // 2. Create VAO + VBO for branch mesh
+    glGenVertexArrays(1, &m_vao_branch);
+    glBindVertexArray(m_vao_branch);
+
+    glGenBuffers(1, &m_vbo_branch);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_branch);
+    glBufferData(GL_ARRAY_BUFFER,
+                 verts.size() * sizeof(GLfloat),
+                 verts.data(),
+                 GL_STATIC_DRAW);
+
+    // vertex attribs: position (0), normal (1)
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat),
+        (void*)0
+        );
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat),
+        (void*)(3 * sizeof(GLfloat))
+        );
+
+    // 3. Instance VBO (just allocate now; data filled after generateLSystem)
+    if (m_branchInstanceVBO == 0) {
+        glGenBuffers(1, &m_branchInstanceVBO);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, m_branchInstanceVBO);
+    // no glBufferData yet; generateLSystem will fill it
+
+    // 4. Set up instance attributes 2–5 (mat4 columns)
+    std::size_t vec4Size = sizeof(glm::vec4);
+    std::size_t mat4Size = sizeof(glm::mat4);
+
+    for (int i = 0; i < 4; ++i) {
+        GLuint loc = 2 + i;
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(
+            loc,
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            mat4Size,
+            reinterpret_cast<void*>(i * vec4Size)
+            );
+        glVertexAttribDivisor(loc, 1); // one per instance
+    }
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Realtime::initLeafGeometryAndInstances() {
+    Obj leaf;
+    const std::string path = "src/obj/leaf_2.obj";
+    leaf.readOBJ(path);
+    std::vector<GLfloat> verts = leaf.generateShape();
+    num_leaf_verts = verts.size() / 6;
+
+    glGenVertexArrays(1, &m_vao_leaf);
+    glBindVertexArray(m_vao_leaf);
+
+    glGenBuffers(1, &m_vbo_leaf);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo_leaf);
+    glBufferData(GL_ARRAY_BUFFER,
+                 verts.size() * sizeof(GLfloat),
+                 verts.data(),
+                 GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat),
+        (void*)0
+        );
+
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE,
+        6 * sizeof(GLfloat),
+        (void*)(3 * sizeof(GLfloat))
+        );
+
+    if (m_leafInstanceVBO == 0) {
+        glGenBuffers(1, &m_leafInstanceVBO);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, m_leafInstanceVBO);
+
+    std::size_t vec4Size = sizeof(glm::vec4);
+    std::size_t mat4Size = sizeof(glm::mat4);
+
+    for (int i = 0; i < 4; ++i) {
+        GLuint loc = 2 + i;
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(
+            loc,
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            mat4Size,
+            reinterpret_cast<void*>(i * vec4Size)
+            );
+        glVertexAttribDivisor(loc, 1);
+    }
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void Realtime::setupTreeInstances(){
+    // Instance attributes for BRANCH
+    glBindVertexArray(m_vao_branch);
+    glBindBuffer(GL_ARRAY_BUFFER, m_branchInstanceVBO);
+
+    // We’ll use attribute locations 2,3,4,5 for the mat4 columns
+    std::size_t vec4Size = sizeof(glm::vec4);
+    std::size_t mat4Size = sizeof(glm::mat4);
+
+    for (int i = 0; i < 4; ++i) {
+        GLuint loc = 2 + i; // 2,3,4,5
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(
+            loc,
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            mat4Size,
+            reinterpret_cast<void*>(i * vec4Size)
+            );
+        glVertexAttribDivisor(loc, 1); // advance per instance
+    }
+
+    // Instance attributes for LEAF
+    glBindVertexArray(m_vao_leaf);
+    glBindBuffer(GL_ARRAY_BUFFER, m_leafInstanceVBO);
+
+    for (int i = 0; i < 4; ++i) {
+        GLuint loc = 2 + i; // 2,3,4,5 again
+        glEnableVertexAttribArray(loc);
+        glVertexAttribPointer(
+            loc,
+            4,
+            GL_FLOAT,
+            GL_FALSE,
+            mat4Size,
+            reinterpret_cast<void*>(i * vec4Size)
+            );
+        glVertexAttribDivisor(loc, 1);
+    }
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void Realtime::drawLSystem(){
@@ -411,6 +646,67 @@ void Realtime::drawLSystem(){
             break;
         }
     }
+
+    // //Draw instacnes
+    // glm::mat4 model = glm::mat4(1.0f);
+    // glUniformMatrix4fv(model_ID, 1, GL_FALSE, &model[0][0]);
+
+    // // Draw branches
+    // if (m_numBranchInstances > 0) {
+    //     RenderShapeData tempBranch;
+    //     tempBranch.primitive.type = PrimitiveType::BRANCH;
+    //     tempBranch.primitive.material = m_branchMaterial;
+    //     phongIllumination(tempBranch);
+
+    //     glBindVertexArray(m_vao_branch);
+    //     glDrawArraysInstanced(GL_TRIANGLES, 0, num_branch_verts, m_numBranchInstances);
+    // }
+
+    // // Draw leaves
+    // if (m_numLeafInstances > 0) {
+    //     RenderShapeData tempLeaf;
+    //     tempLeaf.primitive.type     = PrimitiveType::LEAF;
+    //     tempLeaf.primitive.material = m_leafMaterial;
+    //     phongIllumination(tempLeaf);
+
+    //     glBindVertexArray(m_vao_leaf);
+    //     glDrawArraysInstanced(GL_TRIANGLES, 0, num_leaf_verts, m_numLeafInstances);
+    // }
+
+    // glBindVertexArray(0);
+}
+
+void Realtime::drawSkydome(glm::vec3 camera_pos){
+    glDepthMask(GL_FALSE);
+    // See inside the sphere
+    glDisable(GL_CULL_FACE);
+
+    // Tell shader this is sky
+    glUniform1i(is_sky_ID, 1);
+
+    // Center dome on camera in world space
+    float radius = 199.f; // large enough vs. your scene scale
+    glm::mat4 model_sky =
+        glm::translate(camera_pos) *
+        glm::scale(glm::vec3(radius));
+
+    glUniformMatrix4fv(model_ID, 1, GL_FALSE, &model_sky[0][0]);
+
+    // Optional: set sky colors
+    GLint skyTop_ID    = glGetUniformLocation(m_shader, "u_skyTopColor");
+    GLint skyBottom_ID = glGetUniformLocation(m_shader, "u_skyBottomColor");
+    //glUniform3f(skyTop_ID,    0.05f, 0.1f, 0.4f); // dark-ish blue
+    glUniform3f(skyTop_ID,    1.0f, 1.0f, 1.0f); // dark-ish blue
+    glUniform3f(skyBottom_ID, 0.6f,  0.8f, 1.0f); // horizon
+
+    glBindVertexArray(m_vao_sky);
+    glDrawArrays(GL_TRIANGLES, 0, num_sky_verts);
+    glBindVertexArray(0);
+
+    // Reset state
+    glUniform1i(is_sky_ID, 0);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_CULL_FACE);
 }
 
 void Realtime::fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts) {
@@ -527,6 +823,10 @@ void Realtime::createUniforms() {
 
     min_fog_ID = glGetUniformLocation(m_shader, "min_dist");
     max_fog_ID = glGetUniformLocation(m_shader, "max_dist");
+
+    useInstancing_ID = glGetUniformLocation(m_shader, "useInstancing");
+
+    is_sky_ID = glGetUniformLocation(m_shader, "u_isSky");
 }
 
 void Realtime::makeFullscreenQuad() {
@@ -605,6 +905,37 @@ void Realtime::makeBloomFBO() {
     m_default_fbo = 4;
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
 }
+
+void Realtime::setKuwahara() {
+    glUseProgram(m_shader_kuwahara);
+
+    // Bind default framebuffer (screen)
+    glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
+    glViewport(0, 0, m_screen_width, m_screen_height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    GLuint bloom_ID = glGetUniformLocation(m_shader_kuwahara, "bloom");
+    glUniform1i(bloom_ID, settings.bloom);
+
+    // Bind the scene color buffer as input
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
+
+    GLint texLoc = glGetUniformLocation(m_shader_kuwahara, "u_tex");
+    glUniform1i(texLoc, 0);
+
+    GLint texelLoc = glGetUniformLocation(m_shader_kuwahara, "u_texelSize");
+    glUniform2f(texelLoc,
+                1.0f / float(m_fbo_width),
+                1.0f / float(m_fbo_height));
+
+    glBindVertexArray(m_fullscreen_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
 
 void Realtime::setBloom() {
     glUseProgram(m_shader_blur);

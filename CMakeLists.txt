@@ -53,6 +53,9 @@ add_executable(${PROJECT_NAME}
     src/lsystem/lsystem.cpp src/lsystem/lsystem.h
     src/shape/objloadernew.h src/shape/objloadernew.cpp
     src/shape/obj.h src/shape/obj.cpp
+    resources/shaders/kuwahara.frag
+    resources/shaders/kuwahara.vert
+
 
 )
 

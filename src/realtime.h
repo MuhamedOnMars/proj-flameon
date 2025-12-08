@@ -59,21 +59,32 @@ private:
     double m_devicePixelRatio;
 
     // Id stores
-    GLuint m_shader, m_shader_bloom, m_shader_blur;
+    GLuint m_shader, m_shader_bloom, m_shader_blur, m_shader_kuwahara;
     GLuint m_default_fbo, m_fbo, m_rbo;
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
 
     GLuint m_fullscreen_vbo, m_fullscreen_vao;
-    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube, m_vbo_leaf, m_vbo_branch;
-    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube, m_vao_leaf, m_vao_branch;
+    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube, m_vbo_leaf, m_vbo_branch, m_vbo_sky = 0;
+    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube, m_vao_leaf, m_vao_branch, m_vao_sky = 0;
 
     GLuint view_ID, proj_ID, model_ID, camera_ID;
     GLuint ambient_k_ID, diffuse_k_ID, specular_k_ID;
     GLuint ambient_ID, diffuse_ID, specular_ID, shininess_ID, light_size_ID;
     GLuint min_fog_ID, max_fog_ID;
 
+    GLuint m_skyTexture = 0;
+
+    //Instance rendering
+    GLuint m_branchInstanceVBO = 0;
+    GLuint m_leafInstanceVBO   = 0;
+    int m_numBranchInstances = 0;
+    int m_numLeafInstances   = 0;
+    GLuint useInstancing_ID;
+    SceneMaterial m_branchMaterial;
+    SceneMaterial m_leafMaterial;
+
     // Vertices vars
-    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts, num_leaf_verts, num_branch_verts = 0;
+    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts, num_leaf_verts, num_branch_verts, num_sky_verts;
     std::vector<float> m_leafData;
     std::vector<float> m_branchData;
 
@@ -83,14 +94,15 @@ private:
     int old_param1, old_param2;
     bool initialized = false;
     int m_fbo_width, m_fbo_height, m_screen_width, m_screen_height;
-    // std::vector<std::pair<PrimitiveType, glm::mat4>> m_treeData; //For L-Systems
     std::vector<RenderShapeData> m_treeData; //For L-Systems
+    GLuint is_sky_ID;
 
 
     // Functions
     void makeFullscreenQuad();
     void makeBloomFBO();
     void setBloom();
+    void setKuwahara();
     void createShapes();
     void fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts);
     void phongIllumination(RenderShapeData object);
@@ -99,6 +111,10 @@ private:
     //L-System Functions
     void generateLSystem();
     void drawLSystem();
+    void setupTreeInstances();
+    void initBranchGeometryAndInstances();
+    void initLeafGeometryAndInstances();
+    void drawSkydome(glm::vec3 camera_pos);
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments
