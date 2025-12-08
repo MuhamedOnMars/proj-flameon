@@ -56,7 +56,7 @@ private:
     double m_devicePixelRatio;
 
     // Id stores
-    GLuint m_shader, m_shader_bloom, m_shader_blur;
+    GLuint m_shader, m_shader_bloom, m_shader_blur, m_shader_kuwahara;
     GLuint m_default_fbo, m_fbo, m_rbo;
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
 
@@ -84,6 +84,7 @@ private:
     void makeFullscreenQuad();
     void makeBloomFBO();
     void setBloom();
+    void setKuwahara();
     void createShapes();
     void fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts);
     void phongIllumination(RenderShapeData object);

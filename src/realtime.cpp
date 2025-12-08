@@ -68,6 +68,8 @@ void Realtime::finish() {
     glDeleteProgram(m_shader);
     glDeleteProgram(m_shader_bloom);
     glDeleteProgram(m_shader_blur);
+    glDeleteProgram(m_fire_shader);
+    glDeleteProgram(m_shader_kuwahara);
 
     glDeleteTextures(2, m_color_buffers);
     glDeleteTextures(2, m_pingpong_color);
@@ -148,6 +150,7 @@ void Realtime::initializeGL() {
     m_shader_bloom = ShaderLoader::createShaderProgram(":/resources/shaders/bloom.vert", ":/resources/shaders/bloom.frag");
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
+    m_shader_kuwahara = ShaderLoader::createShaderProgram(":/resources/shaders/kuwahara.vert", ":/resources/shaders/kuwahara.frag");
 
     createUniforms();
 
@@ -458,6 +461,7 @@ void Realtime::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     setBloom();
+    setKuwahara();
 }
 
 void Realtime::createShapes() {
@@ -695,6 +699,36 @@ void Realtime::makeBloomFBO() {
     // With two more fbo's, default increase from 2 -> 4
     m_default_fbo = 4;
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
+}
+
+void Realtime::setKuwahara() {
+    glUseProgram(m_shader_kuwahara);
+
+    // Bind default framebuffer (screen)
+    glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
+    glViewport(0, 0, m_screen_width, m_screen_height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    GLuint bloom_ID = glGetUniformLocation(m_shader_kuwahara, "bloom");
+    glUniform1i(bloom_ID, settings.bloom);
+
+    // Bind the scene color buffer as input
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
+
+    GLint texLoc = glGetUniformLocation(m_shader_kuwahara, "u_tex");
+    glUniform1i(texLoc, 0);
+
+    GLint texelLoc = glGetUniformLocation(m_shader_kuwahara, "u_texelSize");
+    glUniform2f(texelLoc,
+                1.0f / float(m_fbo_width),
+                1.0f / float(m_fbo_height));
+
+    glBindVertexArray(m_fullscreen_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
 }
 
 void Realtime::setBloom() {
