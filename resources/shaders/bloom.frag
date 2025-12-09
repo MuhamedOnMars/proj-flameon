@@ -16,9 +16,9 @@ uniform vec2 u_texelSize;   // 1.0 / vec2(width, height)
 const int R = 6; //Original filter constant
 
 // across-edge radius / Edge preservation (smaller = sharper, larger = blurrier)
-float Rn = 5;
+float Rn = 10;
 // along-edge radius  / Brushstroke length
-float Rt = 10;
+float Rt = 20;
 // max radius for loop bounds / Sampling
 const int Rmax = 16;   // >= max(Rn, Rt)
 
