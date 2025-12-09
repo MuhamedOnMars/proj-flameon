@@ -63,8 +63,8 @@ private:
     GLuint m_kuwahara_fbo, m_kuwahara_tex;
 
     GLuint m_fullscreen_vbo, m_fullscreen_vao;
-    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube;
-    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube;
+    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube, m_vbo_sky;
+    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube, m_vao_sky;
 
     GLuint view_ID, proj_ID, model_ID, camera_ID;
     GLuint ambient_k_ID, diffuse_k_ID, specular_k_ID;
@@ -72,7 +72,7 @@ private:
     GLuint min_fog_ID, max_fog_ID;
 
     // Vertices vars
-    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts = 0;
+    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts, num_sky_verts = 0;
 
     // Random vars
     RenderData m_renderData;
@@ -93,6 +93,12 @@ private:
     void phongIllumination(RenderShapeData object);
     void createUniforms();
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
+
+    //Skydome variables and functions
+    GLuint m_skyTexture = 0;
+    GLuint is_sky_ID;
+    void drawSkydome(glm::vec3 camera_pos);
+    void initSkydome();
 
     // Fire variables and functions
     void fireLoop();
