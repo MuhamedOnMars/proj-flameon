@@ -89,7 +89,7 @@ private slots:
 
     // Extra Credit:
     void onBloom();
-    void onExtraCredit2();
+    void onGraded();
     void onExtraCredit3();
     void onExtraCredit4();
 };

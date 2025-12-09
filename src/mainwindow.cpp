@@ -226,7 +226,7 @@ void MainWindow::initialize() {
     ec1->setChecked(false);
 
     ec2 = new QCheckBox();
-    ec2->setText(QStringLiteral("Extra Credit 2"));
+    ec2->setText(QStringLiteral("Color Grade"));
     ec2->setChecked(false);
 
     ec3 = new QCheckBox();
@@ -367,7 +367,7 @@ void MainWindow::connectExposure() {
 
 void MainWindow::connectExtraCredit() {
     connect(ec1, &QCheckBox::clicked, this, &MainWindow::onBloom);
-    connect(ec2, &QCheckBox::clicked, this, &MainWindow::onExtraCredit2);
+    connect(ec2, &QCheckBox::clicked, this, &MainWindow::onGraded);
     connect(ec3, &QCheckBox::clicked, this, &MainWindow::onExtraCredit3);
     connect(ec4, &QCheckBox::clicked, this, &MainWindow::onExtraCredit4);
 }
@@ -508,8 +508,8 @@ void MainWindow::onBloom() {
     realtime->settingsChanged();
 }
 
-void MainWindow::onExtraCredit2() {
-    settings.extraCredit2 = !settings.extraCredit2;
+void MainWindow::onGraded() {
+    settings.graded = !settings.graded;
     realtime->settingsChanged();
 }
 

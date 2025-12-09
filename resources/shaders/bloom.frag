@@ -5,7 +5,9 @@ out vec4 fragColor;
 
 uniform sampler2D scene;
 uniform sampler2D blur;
+uniform sampler3D LUT;
 uniform bool bloom;
+uniform bool graded;
 uniform float exposure;
 
 void main()
@@ -17,6 +19,15 @@ void main()
         sceneColor += blurColor;
     }
 
-    vec3 tone_mapped = vec3(1.0) - exp(-sceneColor * exposure);
-    fragColor = vec4(tone_mapped, 1.0);
+    vec3 toneMapped = vec3(1.0) - exp(-sceneColor * exposure);
+    fragColor = vec4(toneMapped, 1.0);
+
+    if (graded) {
+        float lutSize = 64.0;
+        float scale = (lutSize - 1.0) / lutSize;
+        float offset = 1.0 / (2.0 * lutSize);
+
+        vec3 newColor = texture(LUT, scale * toneMapped + offset).rgb;
+        fragColor = vec4(newColor, 1.0);
+    }
 }
