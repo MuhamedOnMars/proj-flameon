@@ -16,6 +16,8 @@
 #include "settings.h"
 
  #include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/transform.hpp>
 
 // ================== Rendering the Scene!
 
@@ -60,6 +62,10 @@ void Realtime::finish() {
             glDeleteBuffers(1, &object.vbo);
             glDeleteVertexArrays(1, &object.vao);
         }
+    }
+
+    if (m_skyTexture) {
+        glDeleteTextures(1, &m_skyTexture);
     }
 
     glDeleteVertexArrays(1, &m_fullscreen_vao);
@@ -153,6 +159,13 @@ void Realtime::initializeGL() {
     m_shader_kuwahara = ShaderLoader::createShaderProgram(":/resources/shaders/kuwahara.vert", ":/resources/shaders/kuwahara.frag");
 
     createUniforms();
+
+    //Skydome
+    Sphere skySphere;
+    // Reasonable tessellation – doesn’t need to match main spheres
+    skySphere.updateParams(40, 40);
+    fillVertices(skySphere, m_vbo_sky, m_vao_sky, num_sky_verts);
+    initSkydome();
 
     //fire
     createCircle(m_tessalations, -0.f);
@@ -368,6 +381,68 @@ void Realtime::fireLoop() {
 
 }
 
+void Realtime::initSkydome(){
+    QImage img("src/rogland_clear_night_2k.jpeg");
+    if (img.isNull()) {
+        std::cerr << "[Skydome] Failed to load sky texture image\n";
+        m_skyTexture = 0;
+        return;
+    }
+
+    QImage glImg = img.convertToFormat(QImage::Format_RGBA8888).mirrored();
+
+    glGenTextures(1, &m_skyTexture);
+    glBindTexture(GL_TEXTURE_2D, m_skyTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 glImg.width(), glImg.height(),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, glImg.bits());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    std::cout << "[Skydome] Loaded sky texture " << m_skyTexture
+              << " (" << glImg.width() << "x" << glImg.height() << ")\n";
+
+}
+
+void Realtime::drawSkydome(glm::vec3 camera_pos){
+    glDepthMask(GL_FALSE);
+    // See inside the sphere
+    glDisable(GL_CULL_FACE);
+
+    // Tell shader this is sky
+    glUniform1i(is_sky_ID, 1);
+
+    // Center dome on camera in world space
+    float radius = 99.f; // large enough vs. your scene scale
+    glm::mat4 model_sky =
+        glm::translate(camera_pos) *
+        glm::scale(glm::vec3(radius));
+
+    glUniformMatrix4fv(model_ID, 1, GL_FALSE, &model_sky[0][0]);
+
+    // Optional: set sky colors
+    GLint skyTop_ID    = glGetUniformLocation(m_shader, "u_skyTopColor");
+    GLint skyBottom_ID = glGetUniformLocation(m_shader, "u_skyBottomColor");
+    //glUniform3f(skyTop_ID,    0.05f, 0.1f, 0.4f); // dark-ish blue
+    glUniform3f(skyTop_ID,    1.0f, 1.0f, 1.0f); // dark-ish blue
+    glUniform3f(skyBottom_ID, 0.6f,  0.8f, 1.0f); // horizon
+
+    glBindVertexArray(m_vao_sky);
+    glDrawArrays(GL_TRIANGLES, 0, num_sky_verts);
+    glBindVertexArray(0);
+
+    // Reset state
+    glUniform1i(is_sky_ID, 0);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_CULL_FACE);
+}
+
 void Realtime::paintGL() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     glViewport(0, 0, m_fbo_width, m_fbo_height);
@@ -398,6 +473,13 @@ void Realtime::paintGL() {
     // Fog uniforms
     glUniform1f(min_fog_ID, settings.fogMin);
     glUniform1f(max_fog_ID, settings.fogMax);
+
+    // Binding sky texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_skyTexture);
+    GLint skyTexLoc = glGetUniformLocation(m_shader, "u_skyTex");
+    glUniform1i(skyTexLoc, 0);
+    drawSkydome(camera_pos);
 
     std::vector<RenderShapeData> &object_list = m_renderData.shapes;
     for (int k = 0; k < object_list.size(); k++) {
@@ -462,7 +544,7 @@ void Realtime::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     setBloom();
-    setKuwahara();
+    //setKuwahara();
 }
 
 void Realtime::createShapes() {
@@ -623,6 +705,8 @@ void Realtime::createUniforms() {
 
     min_fog_ID = glGetUniformLocation(m_shader, "min_dist");
     max_fog_ID = glGetUniformLocation(m_shader, "max_dist");
+
+    is_sky_ID = glGetUniformLocation(m_shader, "u_isSky");
 }
 
 void Realtime::makeFullscreenQuad() {
@@ -812,6 +896,14 @@ void Realtime::setBloom() {
     glUniform1i(blur_ID, 1);
     GLuint exposure_ID = glGetUniformLocation(m_shader_bloom, "exposure");
     glUniform1f(exposure_ID, settings.exposure);
+
+    //Kuwahara filter
+    GLuint kuwahara_ID = glGetUniformLocation(m_shader_bloom, "kuwaharaOn");
+    glUniform1i(kuwahara_ID, settings.bloom); // or settings.bloom
+    GLint texelLoc = glGetUniformLocation(m_shader_bloom, "u_texelSize");
+    glUniform2f(texelLoc,
+                1.0f / float(m_fbo_width),
+                1.0f / float(m_fbo_height));
 
     GLuint grade_ID = glGetUniformLocation(m_shader_bloom, "graded");
     glUniform1i(grade_ID, settings.graded);
