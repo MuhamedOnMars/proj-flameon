@@ -948,32 +948,33 @@ void Realtime::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void Realtime::mouseMoveEvent(QMouseEvent *event) {
-    if (m_mouseDown) {
-        int posX = event->position().x();
-        int posY = event->position().y();
-        int deltaX = posX - m_prev_mouse_pos.x;
-        int deltaY = posY - m_prev_mouse_pos.y;
-        m_prev_mouse_pos = glm::vec2(posX, posY);
+    //if (m_mouseDown) {
+        // int posX = event->position().x();
+        // int posY = event->position().y();
+        // int deltaX = posX - m_prev_mouse_pos.x;
+        // int deltaY = posY - m_prev_mouse_pos.y;
+        // m_prev_mouse_pos = glm::vec2(posX, posY);
 
-        float amount = 0.01f;
-        SceneCameraData& cam = m_camera.camera;
-        glm::vec3 final_pos = cam.pos;
+        // float amount = 0.01f;
+        // SceneCameraData& cam = m_camera.camera;
+        // glm::vec3 final_pos = cam.pos;
 
-        glm::vec3 look = glm::normalize(cam.look);
-        glm::vec3 up = glm::normalize(cam.up);
+        // glm::vec3 look = glm::normalize(cam.look);
+        // glm::vec3 up = glm::normalize(cam.up);
 
-        // Use deltaX and deltaY here to rotate
-        glm::mat3 rod_x = rodrigues(deltaX * amount, up);
-        look = glm::normalize(rod_x * look);
+        // // Use deltaX and deltaY here to rotate
+        // glm::mat3 rod_x = rodrigues(num * amount, up);
+        // num+=2;
+        // look = glm::normalize(rod_x * look);
 
-        glm::vec3 right = glm::normalize(glm::cross(look, up));
-        glm::mat3 rod_y = rodrigues(deltaY * amount, right);
-        look = glm::normalize(rod_y * look);
+        // glm::vec3 right = glm::normalize(glm::cross(look, up));
+        // glm::mat3 rod_y = rodrigues(deltaY * amount, right);
+        // look = glm::normalize(rod_y * look);
 
-        cam.look = glm::vec4(look, 0.f);
+        // cam.look = glm::vec4(look, 0.f);
 
-        update(); // asks for a PaintGL() call to occur
-    }
+        // update(); // asks for a PaintGL() call to occur
+    //}
 }
 
 glm::mat3 Realtime::rodrigues(float theta, glm::vec3 axis) {
@@ -989,12 +990,14 @@ glm::mat3 Realtime::rodrigues(float theta, glm::vec3 axis) {
     return result;
 }
 
+float angle = 0.f;
 void Realtime::timerEvent(QTimerEvent *event) {
     int elapsedms   = m_elapsedTimer.elapsed();
     float deltaTime = elapsedms * 0.001f;
     m_elapsedTimer.restart();
 
     float amount = 5.0f * deltaTime;
+    float rotSpeed = 0.5f * deltaTime;
     SceneCameraData& cam = m_camera.camera;
     glm::vec3 final_pos = cam.pos;
 
@@ -1003,25 +1006,39 @@ void Realtime::timerEvent(QTimerEvent *event) {
     glm::vec3 right = glm::normalize(glm::cross(look, up));
 
     // Use deltaTime and m_keyMap here to move around
-    if (m_keyMap[Qt::Key_W]) {
-        final_pos += look * amount;
-    }
-    if (m_keyMap[Qt::Key_S]) {
-        final_pos -= look * amount;
-    }
-    if (m_keyMap[Qt::Key_D]) {
-        final_pos += right * amount;
-    }
-    if (m_keyMap[Qt::Key_A]) {
-        final_pos -= right * amount;
-    }
-    if (m_keyMap[Qt::Key_Space]) {
-        final_pos += up * amount;
-    }
-    if (m_keyMap[Qt::Key_Control]) {
-        final_pos -= up * amount;
-    }
+    // if (m_keyMap[Qt::Key_W]) {
+    //     final_pos += look * amount;
+    // }
+    // if (m_keyMap[Qt::Key_S]) {
+    //     final_pos -= look * amount;
+    // }
+    // if (m_keyMap[Qt::Key_D]) {
+    //     final_pos += right * amount;
+    // }
+    // if (m_keyMap[Qt::Key_A]) {
+    //     final_pos -= right * amount;
+    // }
+    // if (m_keyMap[Qt::Key_Space]) {
+    //     final_pos += up * amount;
+    // }
+    // if (m_keyMap[Qt::Key_Control]) {
+    //     final_pos -= up * amount;
+    // }
+
+    glm::vec3 center{0.0,2.0,0.0};
+    float radius = 3.f;
+    angle += 0.5 * deltaTime;
+    final_pos = center + glm::vec3{radius*cos(angle), 0, radius*sin(angle)};
     cam.pos = glm::vec4(final_pos, 1.0f);
+
+    // Use deltaX and deltaY here to rotate
+    glm::mat3 rod_x = rodrigues(rotSpeed, up);
+    look = glm::normalize(rod_x * look);
+
+    glm::mat3 rod_y = rodrigues(0 * rotSpeed, right);
+    look = glm::normalize(rod_y * look);
+
+    cam.look = glm::vec4(look, 0.f);
 
     update(); // asks for a PaintGL() call to occur
 }
