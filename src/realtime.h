@@ -80,6 +80,9 @@ private:
     int old_param1, old_param2;
     bool initialized = false;
     int m_fbo_width, m_fbo_height, m_screen_width, m_screen_height;
+    bool m_parsed = false;
+    float m_fog = 0;
+    float m_fog_rate = 0.025f;
 
 
     // Functions
