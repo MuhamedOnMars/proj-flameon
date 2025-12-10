@@ -493,7 +493,9 @@ void Realtime::paintGL() {
 
     // Fog uniforms
     glUniform1f(min_fog_ID, settings.fogMin);
-    glUniform1f(max_fog_ID, settings.fogMax);
+    glUniform1f(max_fog_ID, m_fog);
+    if(m_parsed)
+    m_fog+=m_fog_rate;
 
     // Binding sky texture
     glActiveTexture(GL_TEXTURE0);
@@ -573,6 +575,7 @@ void Realtime::createShapes() {
     std::vector<RenderShapeData> &shapes = m_renderData.shapes;
 
     for (int k = 0; k < shapes.size(); k++) {
+        m_parsed = true;
         RenderShapeData& object = shapes[k];
         PrimitiveType type = object.primitive.type;
 
@@ -1017,8 +1020,7 @@ void Realtime::timerEvent(QTimerEvent *event) {
     float deltaTime = elapsedms * 0.001f;
     m_elapsedTimer.restart();
 
-    float amount = 5.0f * deltaTime;
-    float rotSpeed = 0.5f * deltaTime;
+    float amount = 5.f * deltaTime;
     SceneCameraData& cam = m_camera.camera;
     glm::vec3 final_pos = cam.pos;
 
@@ -1026,40 +1028,12 @@ void Realtime::timerEvent(QTimerEvent *event) {
     glm::vec3 up = glm::normalize(cam.up);
     glm::vec3 right = glm::normalize(glm::cross(look, up));
 
-    // Use deltaTime and m_keyMap here to move around
-    // if (m_keyMap[Qt::Key_W]) {
-    //     final_pos += look * amount;
-    // }
-    // if (m_keyMap[Qt::Key_S]) {
-    //     final_pos -= look * amount;
-    // }
-    // if (m_keyMap[Qt::Key_D]) {
-    //     final_pos += right * amount;
-    // }
-    // if (m_keyMap[Qt::Key_A]) {
-    //     final_pos -= right * amount;
-    // }
-    // if (m_keyMap[Qt::Key_Space]) {
-    //     final_pos += up * amount;
-    // }
-    // if (m_keyMap[Qt::Key_Control]) {
-    //     final_pos -= up * amount;
-    // }
-
-    glm::vec3 center{0.0,1.0,0.0};
     float radius = 6.f;
-    angle += 0.2f * deltaTime; //rotation speed here
-    final_pos = center + glm::vec3{radius*cos(angle), 0, radius*sin(angle)};
-    cam.pos = glm::vec4(final_pos, 1.0f);
-
-    // Use deltaX and deltaY here to rotate
-    glm::mat3 rod_x = rodrigues(rotSpeed, up);
-    look = glm::normalize(rod_x * look);
-
-    glm::mat3 rod_y = rodrigues(0 * rotSpeed, right);
-    look = glm::normalize(rod_y * look);
-
-    cam.look = glm::vec4(glm::normalize(center-final_pos), 0.f);
+    angle += 0.1f * deltaTime; //rotation speed here
+    if(m_parsed) {
+        final_pos += look * amount * -0.05f;
+        cam.pos = glm::vec4(final_pos, 1.0f);
+    }
 
     update(); // asks for a PaintGL() call to occur
 }
