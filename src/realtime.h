@@ -56,13 +56,15 @@ private:
     double m_devicePixelRatio;
 
     // Id stores
-    GLuint m_shader, m_shader_bloom, m_shader_blur;
+    GLuint m_shader, m_shader_bloom, m_shader_blur, m_shader_kuwahara;
     GLuint m_default_fbo, m_fbo, m_rbo;
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
+    GLuint m_lut_texture;
+    GLuint m_kuwahara_fbo, m_kuwahara_tex;
 
     GLuint m_fullscreen_vbo, m_fullscreen_vao;
-    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube;
-    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube;
+    GLuint m_vbo_sphere, m_vbo_cyl, m_vbo_cone, m_vbo_cube, m_vbo_sky;
+    GLuint m_vao_sphere, m_vao_cyl, m_vao_cone, m_vao_cube, m_vao_sky;
 
     GLuint view_ID, proj_ID, model_ID, camera_ID;
     GLuint ambient_k_ID, diffuse_k_ID, specular_k_ID;
@@ -70,7 +72,7 @@ private:
     GLuint min_fog_ID, max_fog_ID;
 
     // Vertices vars
-    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts = 0;
+    int num_sphere_verts, num_cyl_verts, num_cone_verts, num_cube_verts, num_sky_verts = 0;
 
     // Random vars
     RenderData m_renderData;
@@ -78,17 +80,76 @@ private:
     int old_param1, old_param2;
     bool initialized = false;
     int m_fbo_width, m_fbo_height, m_screen_width, m_screen_height;
+    bool m_parsed = false;
+    float m_fog = 0;
+    float m_fog_rate = 0.025f;
 
 
     // Functions
     void makeFullscreenQuad();
     void makeBloomFBO();
+    void loadLUT();
     void setBloom();
+    void setKuwahara();
     void createShapes();
     void fillVertices(Shape &shape, GLuint &vbo, GLuint &vao, int &num_verts);
     void phongIllumination(RenderShapeData object);
     void createUniforms();
     glm::mat3 rodrigues(float theta, glm::vec3 axis);
+
+    //Skydome variables and functions
+    GLuint m_skyTexture = 0;
+    GLuint is_sky_ID;
+    void drawSkydome(glm::vec3 camera_pos);
+    void initSkydome();
+
+    // Fire variables and functions
+    void fireLoop();
+    void createCircle(float tessalations, float z);
+    void makeCircleSlice(float currentTheta, float nextTheta, float z);
+    void makeCircleTile(glm::vec3 bottomRight, glm::vec3 top, glm::vec3 bottomLeft);
+
+    int m_tessalations = 4;
+    GLuint m_fire_shader;
+    GLuint m_fire_vbo;
+    GLuint m_fire_vao;
+    std::vector<float> m_vertexData;
+
+    float m_radius = 0.008f;
+    struct Particle {
+        glm::vec3 position, velocity;
+        glm::vec3 color = glm::vec3{0,1,0};
+        float life = 1.f;
+        float heat = 0.f;
+    };
+    std::vector<Particle> m_particles;
+    GLuint m_pos_vbo;
+    std::vector<float> m_pos_data = {};
+
+    GLuint m_color_vbo;
+    std::vector<float> m_color_data = {};
+
+    //forces
+    float m_gravity = 0.0004f;
+
+    //collisions
+    int m_collision_depth = 1;
+    float m_bounce_factor = 0.5;
+
+    //particles
+    int m_maxParticles = 50000;
+    int m_rows = 30;
+    int m_cols = 40;
+    float m_decay = 0.001;
+
+    //heat
+    float m_heat_transfer = 0.5;
+    float m_heat_decay = 0.25;
+
+    //bounds
+    float m_side_bound = 0.8f;
+    float m_ground_bound = 0.0f;
+    float m_offset = 0.03;
 
     /**
      * @brief verifyVAO - prints in the terminal how OpenGL would interpret `triangleData` using the inputted VAO arguments

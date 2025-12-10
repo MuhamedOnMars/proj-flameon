@@ -1,0 +1,146 @@
+{
+  "name": "root",
+  "globalData": {
+    "ambientCoeff": 0.5,
+    "diffuseCoeff": 0.5,
+    "specularCoeff": 0.5,
+    "transparentCoeff": 0
+  },
+  "cameraData": {
+    "position": [-2.25, 1.2, 2.5],
+    "up": [0.0, 1.0, 0.0],
+    "heightAngle": 35.0,
+    "focus": [0.0, 0.0, 0.0]
+  },
+  "groups": [
+    {
+       "lights": [
+        {
+          "type": "directional",
+          "color": [1.0, 1.0, 1.0],
+          "direction": [0.0, -1.0, 0.0]
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "scale": [0.05, 0.05, 0.05],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.429, 0.263, 0.086],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_wood.obj",
+              "diffuse": [0.734, 0.366, 0.183],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 20.0
+            }
+          ]
+        },
+        {
+          "scale": [0.05, 0.05, 0.05],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.654, 0.654, 0.654],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_rocks.obj",
+              "diffuse": [0.921, 0.921, 0.921],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 20.0
+            }
+          ]
+        },
+         {
+          "scale": [0.05, 0.05, 0.05],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.354, 0.354, 0.354],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_small_rocks.obj",
+              "diffuse": [0.921, 0.921, 0.921],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 20.0
+            }
+          ]
+        },
+          {
+          "scale": [0.05, 0.05, 0.05],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.166, 0.101, 0.033],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_dirt.obj",
+              "diffuse": [0.05, 0.05, 0.05],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 0.0
+            }
+          ]
+        },
+        {
+          "scale": [0.55, 0.55, 0.55],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.077, 0.175, 0.048],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/trees_final.obj",
+              "diffuse": [0.05, 0.05, 0.05],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 0.0
+            }
+          ]
+        },     
+        {
+          "scale": [1.0, 1.0, 1.0],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.157, 0.100, 0.038],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/groundv2.obj",
+              "diffuse": [0.05, 0.05, 0.05],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 0.0
+            }
+          ]
+        },
+                {
+          "scale": [0.45, 0.45, 0.45],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.12, 0.12, 0.12],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/mounts.obj",
+              "diffuse": [0.05, 0.05, 0.05],
+              "specular": [0.0, 0.0, 0.0],
+              "shininess": 0.0
+            }
+          ]
+        },
+                        {
+          "scale": [1.0, 1.0, 1.0],
+          "rotate": [0.0, 1.0, 0.0, 0.0],
+          "primitives": [
+            {
+              "type": "mesh",
+              "ambient": [0.943, 0.873, 0.497],
+              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/p0ts.obj",
+              "diffuse": [0.05, 0.05, 0.05],
+              "specular": [1.0, 1.0, 1.0],
+              "shininess": 80.0
+            }
+          ]
+        }
+
+      ]
+    }
+  ]
+}
+
+
+

@@ -15,7 +15,7 @@ struct Settings {
     float fogMax = 0;
     float exposure = 1;
     bool bloom = false;
-    bool extraCredit2 = false;
+    bool graded = false;
     bool extraCredit3 = false;
     bool extraCredit4 = false;
 };

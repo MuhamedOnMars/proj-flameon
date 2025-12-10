@@ -84,6 +84,11 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/blur.vert
         resources/shaders/bloom.frag
         resources/shaders/bloom.vert
+        resources/shaders/fire.frag
+        resources/shaders/fire.vert
+        resources/shaders/kuwahara.frag
+        resources/shaders/kuwahara.vert
+        resources/cool_tone.cube
 )
 
 # GLEW: this provides support for Windows (including 64-bit)

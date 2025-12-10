@@ -32,9 +32,32 @@ uniform Light lights[8];
 uniform float max_dist;
 uniform float min_dist;
 
+//skydome
+uniform bool u_isSky;
+uniform vec3 u_skyTopColor;
+uniform vec3 u_skyBottomColor;
+uniform sampler2D u_skyTex;
+
 void main() {
     vec3 norm = normalize(world_norm);
     fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    //Skydome
+    if (u_isSky) {
+        // Direction from camera to fragment
+        vec3 dir = normalize(world_pos - camera_pos);
+
+        // Equirectangular mapping
+        float u = atan(dir.z, dir.x) / (2.0 * 3.14159265) + 0.5;
+        float v = asin(clamp(dir.y, -1.0, 1.0)) / 3.14159265 + 0.5;
+        vec2 uv = vec2(u, v);
+
+        vec3 skyColor = texture(u_skyTex, uv).rgb;
+
+        fragColor   = vec4(skyColor, 1.0);
+        brightColor = vec4(0.0);  // usually sky shouldn't contribute to bloom
+        return;
+    }
 
     // Ambient
     vec3 illumination = ka * vec3(ambient);
