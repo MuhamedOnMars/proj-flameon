@@ -31,7 +31,7 @@
             {
               "type": "mesh",
               "ambient": [0.429, 0.263, 0.086],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_wood.obj",
+              "meshFile": "scenefiles/objects/fp_wood.obj",
               "diffuse": [0.734, 0.366, 0.183],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 20.0
@@ -45,7 +45,7 @@
             {
               "type": "mesh",
               "ambient": [0.654, 0.654, 0.654],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_rocks.obj",
+              "meshFile": "scenefiles/objects/fp_rocks.obj",
               "diffuse": [0.921, 0.921, 0.921],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 20.0
@@ -59,7 +59,7 @@
             {
               "type": "mesh",
               "ambient": [0.354, 0.354, 0.354],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_small_rocks.obj",
+              "meshFile": "scenefiles/objects/fp_small_rocks.obj",
               "diffuse": [0.921, 0.921, 0.921],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 20.0
@@ -73,7 +73,7 @@
             {
               "type": "mesh",
               "ambient": [0.166, 0.101, 0.033],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/fp_dirt.obj",
+              "meshFile": "scenefiles/objects/fp_dirt.obj",
               "diffuse": [0.05, 0.05, 0.05],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 0.0
@@ -87,7 +87,7 @@
             {
               "type": "mesh",
               "ambient": [0.077, 0.175, 0.048],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/trees_final.obj",
+              "meshFile": "scenefiles/objects/trees_final.obj",
               "diffuse": [0.05, 0.05, 0.05],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 0.0
@@ -101,7 +101,7 @@
             {
               "type": "mesh",
               "ambient": [0.157, 0.100, 0.038],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/groundv2.obj",
+              "meshFile": "scenefiles/objects/groundv2.obj",
               "diffuse": [0.05, 0.05, 0.05],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 0.0
@@ -115,7 +115,7 @@
             {
               "type": "mesh",
               "ambient": [0.12, 0.12, 0.12],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/mounts.obj",
+              "meshFile": "scenefiles/objects/mounts.obj",
               "diffuse": [0.05, 0.05, 0.05],
               "specular": [0.0, 0.0, 0.0],
               "shininess": 0.0
@@ -129,7 +129,7 @@
             {
               "type": "mesh",
               "ambient": [0.943, 0.873, 0.497],
-              "meshFile": "/Users/skylerhall/Desktop/cs1230/proj-flameon/scenefiles/objects/p0ts.obj",
+              "meshFile": "scenefiles/objects/p0ts.obj",
               "diffuse": [0.05, 0.05, 0.05],
               "specular": [1.0, 1.0, 1.0],
               "shininess": 80.0

@@ -5,7 +5,7 @@ ObjLoader::ObjLoader() {}
 ObjLoader::ObjLoader(std::string mesh_file) {
     std::ifstream input_file(mesh_file);
     if (!input_file.is_open()) {
-        std::cerr << "Error opening file!" << std::endl;
+        std::cerr << "Error opening file:" << mesh_file << std::endl;
         return;
     }
 

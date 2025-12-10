@@ -403,7 +403,9 @@ void Realtime::fireLoop() {
 }
 
 void Realtime::initSkydome(){
-    QImage img("/Users/skylerhall/Desktop/cs1230/proj-flameon/src/rogland_clear_night_2k.jpeg");
+    std::cout << QString("src/rogland_clear_night_2k.jpeg").toStdString() << std::endl;
+    QImage img(QString("src/rogland_clear_night_2k.jpeg"));
+
     if (img.isNull()) {
         std::cerr << "[Skydome] Failed to load sky texture image\n";
         m_skyTexture = 0;
