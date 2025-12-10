@@ -493,7 +493,7 @@ void Realtime::paintGL() {
 
     // Fog uniforms
     glUniform1f(min_fog_ID, settings.fogMin);
-    glUniform1f(max_fog_ID, m_fog);
+    glUniform1f(max_fog_ID, settings.fogMax);
     if(m_parsed)
     m_fog+=m_fog_rate;
 
