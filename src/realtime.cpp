@@ -272,17 +272,38 @@ void Realtime::fireLoop() {
             h = glm::clamp(h, 0.f, 1.f);
             glm::vec3 color;
 
-            if(h < 0.33) {
-                float t = h/0.33;
-                color = glm::mix(glm::vec3{0,0,0}, glm::vec3{1,0,0}, t); //mix black -> red
+            if(!settings.graded) {
+                if(h < 0.33) {
+                    float t = h/0.33;
+                    color = glm::mix(glm::vec3{0,0,0}, glm::vec3{1,0,0}, t); //mix black -> red
+                }
+                else if (h < 0.66) {
+                    float t = (h-0.33)/0.33f;
+                    color = glm::mix(glm::vec3{1,0,0}, glm::vec3{1,0.5,0}, t); //red -> orange
+                } else {
+                    float t = (h - 0.66)/0.34f;
+                    color = glm::mix(glm::vec3{1,0.5,0}, glm::vec3{1,0.9,0}, t); //orange -> almost yellow
+                }
             }
-            else if (h < 0.66) {
-                float t = (h-0.33)/0.33f;
-                color = glm::mix(glm::vec3{1,0,0}, glm::vec3{1,0.5,0}, t); //red -> orange
-            } else {
-                float t = (h - 0.66)/0.34f;
-                color = glm::mix(glm::vec3{1,0.5,0}, glm::vec3{1,0.9,0}, t); //orange -> almost yellow
+            else {
+                if (h < 0.25f) {
+                    float t = h / 0.25f;
+                    color = glm::mix(glm::vec3(0,0,0), glm::vec3(0,0,1), t);  // black → blue
+                }
+                else if (h < 0.50f) {
+                    float t = (h - 0.25f) / 0.25f;
+                    color = glm::mix(glm::vec3(0,0,1), glm::vec3(0,1,1), t);  // blue → cyan
+                }
+                else if (h < 0.75f) {
+                    float t = (h - 0.50f) / 0.25f;
+                    color = glm::mix(glm::vec3(0,1,1), glm::vec3(0,1,0), t);  // cyan → green
+                }
+                else {
+                    float t = (h - 0.75f) / 0.25f;
+                    color = glm::mix(glm::vec3(0,1,0), glm::vec3(1,0,0), t);  // green → red
+                }
             }
+
 
             m_color_data[index1 + 0] = color.r;
             m_color_data[index1 + 1] = color.g;
