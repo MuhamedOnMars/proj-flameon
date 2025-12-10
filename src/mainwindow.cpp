@@ -222,7 +222,7 @@ void MainWindow::initialize() {
 
     // Extra Credit:
     ec1 = new QCheckBox();
-    ec1->setText(QStringLiteral("Bloom"));
+    ec1->setText(QStringLiteral("Bloom/Filter"));
     ec1->setChecked(false);
 
     ec2 = new QCheckBox();
