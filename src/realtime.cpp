@@ -1046,9 +1046,9 @@ void Realtime::timerEvent(QTimerEvent *event) {
     //     final_pos -= up * amount;
     // }
 
-    glm::vec3 center{0.0,2.0,0.0};
-    float radius = 3.f;
-    angle += 0.5 * deltaTime;
+    glm::vec3 center{0.0,1.0,0.0};
+    float radius = 6.f;
+    angle += 0.2f * deltaTime; //rotation speed here
     final_pos = center + glm::vec3{radius*cos(angle), 0, radius*sin(angle)};
     cam.pos = glm::vec4(final_pos, 1.0f);
 
@@ -1059,7 +1059,7 @@ void Realtime::timerEvent(QTimerEvent *event) {
     glm::mat3 rod_y = rodrigues(0 * rotSpeed, right);
     look = glm::normalize(rod_y * look);
 
-    cam.look = glm::vec4(look, 0.f);
+    cam.look = glm::vec4(glm::normalize(center-final_pos), 0.f);
 
     update(); // asks for a PaintGL() call to occur
 }
