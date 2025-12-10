@@ -403,7 +403,6 @@ void Realtime::fireLoop() {
 }
 
 void Realtime::initSkydome(){
-    std::cout << QString("src/rogland_clear_night_2k.jpeg").toStdString() << std::endl;
     QImage img(QString("src/rogland_clear_night_2k.jpeg"));
 
     if (img.isNull()) {
@@ -564,6 +563,7 @@ void Realtime::paintGL() {
 
     glUseProgram(0);
 
+
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
     glViewport(0, 0, m_screen_width, m_screen_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -571,6 +571,50 @@ void Realtime::paintGL() {
     setBloom();
     //setKuwahara();
 }
+
+// void Realtime::paintDoF(){
+//     GLuint shader = m_shader;
+//     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//     glUseProgram(shader);
+
+//     glActiveTexture(GL_TEXTURE0);
+//     glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
+//     GLint depth_sampler = glGetUniformLocation(shader, "depthSampler");
+//     glUniform1i(depth_sampler, 0);
+
+
+//     glActiveTexture(GL_TEXTURE1);
+//     glBindTexture(GL_TEXTURE_2D, m_fbo_color);
+//     GLint color_sampler = glGetUniformLocation(shader, "colorSampler");
+//     glUniform1i(color_sampler, 1);
+
+//     GLint aperture_loc = glGetUniformLocation(shader, "aperture");
+//     glUniform1f(aperture_loc, currentAperture);
+
+
+//     GLint nearPlane_loc = glGetUniformLocation(shader, "nearPlane");
+//     glUniform1f(nearPlane_loc, currentNearPlane);
+
+//     GLint farPlane_loc = glGetUniformLocation(shader, "farPlane");
+//     glUniform1f(farPlane_loc, currentFarPlane);
+
+//     GLint focalL_loc = glGetUniformLocation(shader, "focalLength");
+//     glUniform1f(focalL_loc, currentFocalLength);
+
+//     GLint focalP_loc = glGetUniformLocation(shader, "focalPlane");
+//     glUniform1f(focalP_loc, currentFocalPlane);
+
+//     glm::vec2 wh = glm::vec2{m_screen_width, m_screen_height};
+//     GLuint wh_loc = glGetUniformLocation(shader, "wh");
+//     glUniform2fv(wh_loc, 1, &wh[0]);
+
+//     paintFullScreen();
+
+//     glUseProgram(0);
+//     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+// }
 
 void Realtime::createShapes() {
     std::set<int> shape_exists;
@@ -767,18 +811,37 @@ void Realtime::makeBloomFBO() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     // Need color buffer for bright colors and normal colors
     glGenTextures(2, m_color_buffers);
+    //glGenerateMipmap(GL_TEXTURE_2D);
+
     for (unsigned int i = 0; i < 2; i++) {
         glBindTexture(GL_TEXTURE_2D, m_color_buffers[i]);
         //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fbo_width, m_fbo_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_fbo_width, m_fbo_height, 0, GL_RGBA, GL_FLOAT, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         // Clamp to avoid blur filtering using repeated textures
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         // Need to use two different color attachments
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_color_buffers[i], 0);
+        glGenerateMipmap(GL_TEXTURE_2D);
     }
+
+
+    // depth tex
+    glGenTextures(1, &m_fbo_depth);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, m_fbo_width, m_fbo_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    std::cout << m_fbo_width << std::endl;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // ensure that the depth values do not exceed 1.0
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depth, 0);
 
     // Renderbuffer
     glGenRenderbuffers(1, &m_rbo);
@@ -937,6 +1000,7 @@ void Realtime::setBloom() {
     glUniform1i(LUT_ID, 2);
 
     glBindVertexArray(m_fullscreen_vao);
+    glGenerateMipmap(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
     glActiveTexture(GL_TEXTURE1);

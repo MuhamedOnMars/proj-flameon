@@ -26,93 +26,14 @@ float luminance(vec3 c) {
     return dot(c, vec3(0.299, 0.587, 0.114));
 }
 
-// vec3 kuwaharaFilter(sampler2D tex, vec2 uvCoord, vec2 texelSize) {
-//     vec3 meanColor[4];
-//     float meanLum[4];
-//     float meanLum2[4];
-
-//     for (int k = 0; k < 4; ++k) {
-//         meanColor[k] = vec3(0.0);
-//         meanLum[k]   = 0.0;
-//         meanLum2[k]  = 0.0;
-//     }
-
-//     float n = float((R + 1) * (R + 1));
-
-//     // 0: top-left
-//     for (int j = -R; j <= 0; ++j) {
-//         for (int i = -R; i <= 0; ++i) {
-//             vec2 offset = vec2(i, j) * texelSize;
-//             vec3 c = texture(tex, uvCoord + offset).rgb;
-//             float L = luminance(c);
-//             meanColor[0] += c;
-//             meanLum[0]   += L;
-//             meanLum2[0]  += L * L;
-//         }
-//     }
-
-//     // 1: top-right
-//     for (int j = -R; j <= 0; ++j) {
-//         for (int i = 0; i <= R; ++i) {
-//             vec2 offset = vec2(i, j) * texelSize;
-//             vec3 c = texture(tex, uvCoord + offset).rgb;
-//             float L = luminance(c);
-//             meanColor[1] += c;
-//             meanLum[1]   += L;
-//             meanLum2[1]  += L * L;
-//         }
-//     }
-
-//     // 2: bottom-left
-//     for (int j = 0; j <= R; ++j) {
-//         for (int i = -R; i <= 0; ++i) {
-//             vec2 offset = vec2(i, j) * texelSize;
-//             vec3 c = texture(tex, uvCoord + offset).rgb;
-//             float L = luminance(c);
-//             meanColor[2] += c;
-//             meanLum[2]   += L;
-//             meanLum2[2]  += L * L;
-//         }
-//     }
-
-//     // 3: bottom-right
-//     for (int j = 0; j <= R; ++j) {
-//         for (int i = 0; i <= R; ++i) {
-//             vec2 offset = vec2(i, j) * texelSize;
-//             vec3 c = texture(tex, uvCoord + offset).rgb;
-//             float L = luminance(c);
-//             meanColor[3] += c;
-//             meanLum[3]   += L;
-//             meanLum2[3]  += L * L;
-//         }
-//     }
-
-//     float minVar = 1e20;
-//     vec3 bestColor = texture(tex, uvCoord).rgb;
-
-//     for (int k = 0; k < 4; ++k) {
-//         vec3 mc  = meanColor[k] / n;
-//         float mL  = meanLum[k]  / n;
-//         float mL2 = meanLum2[k] / n;
-//         float varL = mL2 - mL * mL;
-
-//         if (varL < minVar) {
-//             minVar = varL;
-//             bestColor = mc;
-//         }
-//     }
-
-//     return bestColor;
-// }
-
 vec3 kuwaharaFilter(sampler2D tex, vec2 uvCoord, vec2 texelSize) {
     vec2 texel = texelSize;
-    vec3 centerColor = texture(tex, uvCoord).rgb;
+    vec3 centerColor = textureLod(tex, uvCoord, 0.0).rgb;
     float Lc  = luminance(centerColor);
-    float Lx1 = luminance(texture(tex, uvCoord + vec2(texel.x, 0.0)).rgb);
-    float Lx0 = luminance(texture(tex, uvCoord - vec2(texel.x, 0.0)).rgb);
-    float Ly1 = luminance(texture(tex, uvCoord + vec2(0.0, texel.y)).rgb);
-    float Ly0 = luminance(texture(tex, uvCoord - vec2(0.0, texel.y)).rgb);
+    float Lx1 = luminance(textureLod(tex, uvCoord + vec2(texel.x, 0.0), 0.0).rgb);
+    float Lx0 = luminance(textureLod(tex, uvCoord - vec2(texel.x, 0.0), 0.0).rgb);
+    float Ly1 = luminance(textureLod(tex, uvCoord + vec2(0.0, texel.y), 0.0).rgb);
+    float Ly0 = luminance(textureLod(tex, uvCoord - vec2(0.0, texel.y), 0.0).rgb);
 
     float gx = 0.5 * (Lx1 - Lx0);
     float gy = 0.5 * (Ly1 - Ly0);
@@ -162,7 +83,7 @@ vec3 kuwaharaFilter(sampler2D tex, vec2 uvCoord, vec2 texelSize) {
             }
 
             vec2 offset = p * texel;
-            vec3 c = texture(tex, uvCoord + offset).rgb;
+            vec3 c = textureLod(tex, uvCoord + offset, 0.0).rgb;
             float L = luminance(c);
 
             meanColor[idx] += c;
@@ -197,38 +118,15 @@ vec3 kuwaharaFilter(sampler2D tex, vec2 uvCoord, vec2 texelSize) {
 
 void main()
 {
-    // vec3 sceneColor = texture(scene, vec2(uv.x, uv.y)).rgb;
-    // vec3 blurColor = texture(blur, vec2(uv.x, uv.y)).rgb;
-    // if(bloom) {
-    //     // Add blur to scene
-    //     sceneColor += blurColor;
-    // }
-
-    // vec3 toneMapped = vec3(1.0) - exp(-sceneColor * exposure);
-    // fragColor = vec4(toneMapped, 1.0);
-
-    // if (graded) {
-    //     float lutSize = 64.0;
-    //     float scale = (lutSize - 1.0) / lutSize;
-    //     float offset = 1.0 / (2.0 * lutSize);
-
-    //     vec3 newColor = texture(LUT, scale * toneMapped + offset).rgb;
-    //     fragColor = vec4(newColor, 1.0);
-    // }
-
     vec2 uv2 = uv.xy;
 
     // base scene
-    vec3 sceneColor = texture(scene, uv2).rgb;
-
-    // if (kuwaharaOn) {
-    //     sceneColor = kuwaharaFilter(scene, uv2, u_texelSize);
-    // }
+    vec3 sceneColor = textureLod(scene, uv2, 0.0).rgb;
 
     sceneColor = kuwaharaFilter(scene, uv2, u_texelSize);
 
     // bloom
-    vec3 blurColor = texture(blur, uv2).rgb;
+    vec3 blurColor = textureLod(blur, uv2, 0.0).rgb;
     if (bloom) {
         sceneColor += blurColor;
     }
@@ -242,7 +140,7 @@ void main()
         float lutSize = 64.0;
         float scale = (lutSize - 1.0) / lutSize;
         float offset = 1.0 / (2.0 * lutSize);
-        finalColor = texture(LUT, scale * toneMapped + offset).rgb;
+        finalColor = textureLod(LUT, scale * toneMapped + offset, 0.0).rgb;
     }
 
     fragColor = vec4(finalColor, 1.0);

@@ -88,6 +88,8 @@ qt6_add_resources(${PROJECT_NAME} "Resources"
         resources/shaders/fire.vert
         resources/shaders/kuwahara.frag
         resources/shaders/kuwahara.vert
+        resources/shaders/depth.vert
+        resources/shaders/depth.frag
         resources/cool_tone.cube
 )
 

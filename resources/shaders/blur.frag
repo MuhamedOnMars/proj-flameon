@@ -17,19 +17,19 @@ void main()
     // Finds distance between pixels in texture space (1/texture_width & 1/texture_height where 1 = size in uv)
     vec2 tex_offset = 1.0 / textureSize(tex, 0);
     // Get starting pixel's contribution
-    vec3 result = texture(tex, vec2(uv.x, uv.y)).xyz * weight[0];
+    vec3 result = textureLod(tex, vec2(uv.x, uv.y), 0.0).xyz * weight[0];
     int loop_amt = 5;
     // Convolution --> sampling over pixels surrounding
     if(horizontal) {
         for (int i = 1; i < loop_amt; ++i) {
-           result += texture(tex, vec2(uv.x, uv.y) + vec2(tex_offset.x * i, 0.0)).xyz * weight[i];
-           result += texture(tex, vec2(uv.x, uv.y) - vec2(tex_offset.x * i, 0.0)).xyz * weight[i];
+           result += textureLod(tex, vec2(uv.x, uv.y) + vec2(tex_offset.x * i, 0.0), 0.0).xyz * weight[i];
+           result += textureLod(tex, vec2(uv.x, uv.y) - vec2(tex_offset.x * i, 0.0), 0.0).xyz * weight[i];
         }
     }
     else {
         for (int i = 1; i < loop_amt; ++i) {
-            result += texture(tex, vec2(uv.x, uv.y) + vec2(0.0, tex_offset.y * i)).xyz * weight[i];
-            result += texture(tex, vec2(uv.x, uv.y) - vec2(0.0, tex_offset.y * i)).xyz * weight[i];
+            result += textureLod(tex, vec2(uv.x, uv.y) + vec2(0.0, tex_offset.y * i), 0.0).xyz * weight[i];
+            result += textureLod(tex, vec2(uv.x, uv.y) - vec2(0.0, tex_offset.y * i), 0.0).xyz * weight[i];
         }
     }
     fragColor = vec4(result, 1.0);

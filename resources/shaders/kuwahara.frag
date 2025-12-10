@@ -30,7 +30,7 @@ void main() {
     for (int j = -R; j <= 0; ++j) {
         for (int i = -R; i <= 0; ++i) {
             vec2 offset = vec2(i, j) * u_texelSize;
-            vec3 c = texture(u_tex, uv.xy + offset).rgb;
+            vec3 c = textureLod(u_tex, uv.xy + offset, 0.0).rgb;
             float L = luminance(c);
             meanColor[0] += c;
             meanLum[0]   += L;
@@ -42,7 +42,7 @@ void main() {
     for (int j = -R; j <= 0; ++j) {
         for (int i = 0; i <= R; ++i) {
             vec2 offset = vec2(i, j) * u_texelSize;
-            vec3 c = texture(u_tex, uv.xy + offset).rgb;
+            vec3 c = textureLod(u_tex, uv.xy + offset, 0.0).rgb;
             float L = luminance(c);
             meanColor[1] += c;
             meanLum[1]   += L;
@@ -54,7 +54,7 @@ void main() {
     for (int j = 0; j <= R; ++j) {
         for (int i = -R; i <= 0; ++i) {
             vec2 offset = vec2(i, j) * u_texelSize;
-            vec3 c = texture(u_tex, uv.xy + offset).rgb;
+            vec3 c = textureLod(u_tex, uv.xy + offset, 0.0).rgb;
             float L = luminance(c);
             meanColor[2] += c;
             meanLum[2]   += L;
@@ -66,7 +66,7 @@ void main() {
     for (int j = 0; j <= R; ++j) {
         for (int i = 0; i <= R; ++i) {
             vec2 offset = vec2(i, j) * u_texelSize;
-            vec3 c = texture(u_tex, uv.xy + offset).rgb;
+            vec3 c = textureLod(u_tex, uv.xy + offset, 0.0).rgb;
             float L = luminance(c);
             meanColor[3] += c;
             meanLum[3]   += L;
@@ -75,7 +75,7 @@ void main() {
     }
 
     float minVar = 1e20;
-    vec3 bestColor = texture(u_tex, uv.xy).rgb;
+    vec3 bestColor = textureLod(u_tex, uv.xy, 0.0).rgb;
 
     for (int k = 0; k < 4; ++k) {
         vec3 mc  = meanColor[k] / n;
@@ -89,7 +89,7 @@ void main() {
         }
     }
 
-    vec3 original = texture(u_tex, uv.xy).rgb;
+    vec3 original = textureLod(u_tex, uv.xy, 0.0).rgb;
     vec3 finalColor = bloom ? bestColor : original;
     fragColor = vec4(finalColor, 1.0);
 }

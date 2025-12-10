@@ -7,6 +7,7 @@
 #include <QSettings>
 #include <QLabel>
 #include <QGroupBox>
+#include <QToolBox>
 #include <iostream>
 
 void MainWindow::initialize() {
@@ -72,7 +73,7 @@ void MainWindow::initialize() {
     // Create file uploader for scene file
     uploadFile = new QPushButton();
     uploadFile->setText(QStringLiteral("Upload Scene File"));
-    
+
     saveImage = new QPushButton();
     saveImage->setText(QStringLiteral("Save Image"));
 
@@ -237,6 +238,7 @@ void MainWindow::initialize() {
     ec4->setText(QStringLiteral("Extra Credit 4"));
     ec4->setChecked(false);
 
+    // Tesselation + file buttons stay where they are
     vLayout->addWidget(uploadFile);
     vLayout->addWidget(saveImage);
     vLayout->addWidget(tesselation_label);
@@ -244,20 +246,46 @@ void MainWindow::initialize() {
     vLayout->addWidget(p1Layout);
     vLayout->addWidget(param2_label);
     vLayout->addWidget(p2Layout);
-    vLayout->addWidget(camera_label);
-    vLayout->addWidget(near_label);
-    vLayout->addWidget(nearLayout);
-    vLayout->addWidget(far_label);
-    vLayout->addWidget(farLayout);
 
-    vLayout->addWidget(fog_label);
-    vLayout->addWidget(fogMin_label);
-    vLayout->addWidget(fogMinLayout);
-    vLayout->addWidget(fogMax_label);
-    vLayout->addWidget(fogMaxLayout);
+    // Create toolbox and pages for Camera, Fog, Exposure, Extra Credit
+    QToolBox *toolbox = new QToolBox();
 
-    vLayout->addWidget(exposure_label);
-     vLayout->addWidget(exposureLayout);
+    // Camera page
+    QWidget *cameraPage = new QWidget();
+    QVBoxLayout *cameraLayout = new QVBoxLayout(cameraPage);
+    cameraLayout->addWidget(camera_label);
+    cameraLayout->addWidget(near_label);
+    cameraLayout->addWidget(nearLayout);
+    cameraLayout->addWidget(far_label);
+    cameraLayout->addWidget(farLayout);
+    toolbox->addItem(cameraPage, "Camera");
+
+    // Fog page
+    QWidget *fogPage = new QWidget();
+    QVBoxLayout *fogLayout = new QVBoxLayout(fogPage);
+    fogLayout->addWidget(fog_label);
+    fogLayout->addWidget(fogMin_label);
+    fogLayout->addWidget(fogMinLayout);
+    fogLayout->addWidget(fogMax_label);
+    fogLayout->addWidget(fogMaxLayout);
+    toolbox->addItem(fogPage, "Fog");
+
+    // Exposure page
+    QWidget *exposurePage = new QWidget();
+    QVBoxLayout *exposurePageLayout = new QVBoxLayout(exposurePage);
+    exposurePageLayout->addWidget(exposure_label);
+    exposurePageLayout->addWidget(exposureLayout);
+    toolbox->addItem(exposurePage, "Exposure");
+
+    // Extra Credit page
+    QWidget *ecPage = new QWidget();
+    QVBoxLayout *ecLayout = new QVBoxLayout(ecPage);
+    ecLayout->addWidget(ec_label);
+    ecLayout->addWidget(ec1);
+    ecLayout->addWidget(ec2);
+    ecLayout->addWidget(ec3);
+    ecLayout->addWidget(ec4);
+    toolbox->addItem(ecPage, "Extra Credit");
 
     // From old Project 6
     // vLayout->addWidget(filters_label);
@@ -265,11 +293,10 @@ void MainWindow::initialize() {
     // vLayout->addWidget(filter2);
 
     // Extra Credit:
-    vLayout->addWidget(ec_label);
-    vLayout->addWidget(ec1);
-    vLayout->addWidget(ec2);
-    vLayout->addWidget(ec3);
-    vLayout->addWidget(ec4);
+    // (widgets now live inside the toolbox Extra Credit page)
+
+    // Add toolbox after tesselation section
+    vLayout->addWidget(toolbox);
 
     connectUIElements();
 
@@ -359,10 +386,10 @@ void MainWindow::connectFog() {
 void MainWindow::connectExposure() {
     connect(exposureSlider, &QSlider::valueChanged, this, &MainWindow::onValChangeExposure);
     connect(exposureBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [=, this](double d) {
-                exposureSlider->setValue(int(d * 100.0));
-                settings.exposure = d;
-                realtime->settingsChanged();
-            });
+        exposureSlider->setValue(int(d * 100.0));
+        settings.exposure = d;
+        realtime->settingsChanged();
+    });
 }
 
 void MainWindow::connectExtraCredit() {
