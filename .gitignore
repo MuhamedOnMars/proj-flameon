@@ -78,6 +78,7 @@ compile_commands.json
 *.slo
 *.lo
 *.o
+*.obj
 
 # Precompiled Headers
 *.gch
@@ -113,6 +114,7 @@ compile_commands.json
 *.core
 *.moc
 *.o
+*.obj
 *.orig
 *.rej
 *.so
