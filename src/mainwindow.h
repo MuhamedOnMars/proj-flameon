@@ -25,6 +25,9 @@ private:
     void connectFar();
     void connectFog();
     void connectExposure();
+    void connectFocalPlane();
+    void connectAperture();
+    void connectFocalLength();
 
     // From old Project 6
     // void connectPerPixelFilter();
@@ -62,6 +65,16 @@ private:
     QSlider *exposureSlider;
     QDoubleSpinBox *exposureBox;
 
+    // Depth of Field
+    QSlider *focalPlaneSlider;
+    QDoubleSpinBox *focalPlaneBox;
+
+    QSlider *apertureSlider;
+    QDoubleSpinBox *apertureBox;
+
+    QSlider *focalLengthSlider;
+    QDoubleSpinBox *focalLengthBox;
+
     // Extra Credit:
     QCheckBox *ec1;
     QCheckBox *ec2;
@@ -86,6 +99,14 @@ private slots:
     void onValChangeFogMaxSlider(int newValue);
     void onValChangeFogMaxBox(double newValue);
     void onValChangeExposure(int newValue);
+
+    void onValChangeFocalPlaneSlider(int newValue);
+    void onValChangeFocalPlaneBox(double newValue);
+    void onValChangeApertureSlider(int newValue);
+    void onValChangeApertureBox(double newValue);
+    void onValChangeFocalLengthSlider(int newValue);
+    void onValChangeFocalLengthBox(double newValue);
+
 
     // Extra Credit:
     void onBloom();

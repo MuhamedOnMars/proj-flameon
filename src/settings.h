@@ -13,13 +13,15 @@ struct Settings {
     bool kernelBasedFilter = false;
     float fogMin = 0;
     float fogMax = 0;
+    float focalLength = 1;
+    float focalPlane = 1;
+    float aperture = 1;
     float exposure = 1;
     bool bloom = false;
     bool graded = false;
     bool extraCredit3 = false;
     bool extraCredit4 = false;
 };
-
 
 // The global Settings object, will be initialized by MainWindow
 extern Settings settings;

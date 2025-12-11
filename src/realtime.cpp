@@ -2,6 +2,7 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "utils/sceneparser.h"
 #include "utils/shaderloader.h"
+#include "utils/debug.h"
 #include "shape/sphere.h"
 #include "shape/cylinder.h"
 #include "shape/cone.h"
@@ -15,7 +16,7 @@
 #include <iostream>
 #include "settings.h"
 
- #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/transform.hpp>
 
@@ -157,6 +158,7 @@ void Realtime::initializeGL() {
     m_shader_blur = ShaderLoader::createShaderProgram(":/resources/shaders/blur.vert", ":/resources/shaders/blur.frag");
     m_fire_shader = ShaderLoader::createShaderProgram(":/resources/shaders/fire.vert", ":/resources/shaders/fire.frag");
     m_shader_kuwahara = ShaderLoader::createShaderProgram(":/resources/shaders/kuwahara.vert", ":/resources/shaders/kuwahara.frag");
+    m_depth_shader = ShaderLoader::createShaderProgram(":/resources/shaders/depth.vert", ":/resources/shaders/depth.frag");
 
     createUniforms();
 
@@ -496,7 +498,7 @@ void Realtime::paintGL() {
     glUniform1f(min_fog_ID, settings.fogMin);
     glUniform1f(max_fog_ID, m_fog);
     if(m_parsed)
-    m_fog+=m_fog_rate;
+        m_fog+=m_fog_rate;
 
     // Binding sky texture
     glActiveTexture(GL_TEXTURE0);
@@ -561,60 +563,69 @@ void Realtime::paintGL() {
     glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
     glDepthMask(GL_TRUE);
 
+    //setBloom();
+    paintDoF();
+
+
     glUseProgram(0);
+
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
     glViewport(0, 0, m_screen_width, m_screen_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
     setBloom();
     //setKuwahara();
 }
 
-// void Realtime::paintDoF(){
-//     GLuint shader = m_shader;
-//     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void Realtime::paintDoF(){
+    Debug::glErrorCheck();
 
-//     glUseProgram(shader);
+    GLuint shader = m_depth_shader;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//     glActiveTexture(GL_TEXTURE0);
-//     glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
-//     GLint depth_sampler = glGetUniformLocation(shader, "depthSampler");
-//     glUniform1i(depth_sampler, 0);
+    glUseProgram(shader);
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
+    //glGenerateMipmap(GL_TEXTURE_2D);
+    GLint color_sampler = glGetUniformLocation(shader, "colorSampler");
+    glUniform1i(color_sampler, 0);
 
-//     glActiveTexture(GL_TEXTURE1);
-//     glBindTexture(GL_TEXTURE_2D, m_fbo_color);
-//     GLint color_sampler = glGetUniformLocation(shader, "colorSampler");
-//     glUniform1i(color_sampler, 1);
+    // glActiveTexture(GL_TEXTURE1);
+    // glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
+    // GLint depth_sampler = glGetUniformLocation(shader, "depthSampler");
+    // glUniform1i(depth_sampler, 1);
 
-//     GLint aperture_loc = glGetUniformLocation(shader, "aperture");
-//     glUniform1f(aperture_loc, currentAperture);
+    GLint aperture_loc = glGetUniformLocation(shader, "aperture");
+    glUniform1f(aperture_loc, settings.aperture);
 
+    GLint nearPlane_loc = glGetUniformLocation(shader, "nearPlane");
+    glUniform1f(nearPlane_loc, settings.nearPlane);
 
-//     GLint nearPlane_loc = glGetUniformLocation(shader, "nearPlane");
-//     glUniform1f(nearPlane_loc, currentNearPlane);
+    GLint farPlane_loc = glGetUniformLocation(shader, "farPlane");
+    glUniform1f(farPlane_loc, settings.farPlane);
 
-//     GLint farPlane_loc = glGetUniformLocation(shader, "farPlane");
-//     glUniform1f(farPlane_loc, currentFarPlane);
+    GLint focalL_loc = glGetUniformLocation(shader, "focalLength");
+    glUniform1f(focalL_loc, settings.focalLength);
 
-//     GLint focalL_loc = glGetUniformLocation(shader, "focalLength");
-//     glUniform1f(focalL_loc, currentFocalLength);
+    GLint focalP_loc = glGetUniformLocation(shader, "focalPlane");
+    glUniform1f(focalP_loc, settings.focalPlane);
 
-//     GLint focalP_loc = glGetUniformLocation(shader, "focalPlane");
-//     glUniform1f(focalP_loc, currentFocalPlane);
+    glm::vec2 wh = glm::vec2{m_screen_width, m_screen_height};
+    GLuint wh_loc = glGetUniformLocation(shader, "wh");
+    glUniform2fv(wh_loc, 1, &wh[0]);
 
-//     glm::vec2 wh = glm::vec2{m_screen_width, m_screen_height};
-//     GLuint wh_loc = glGetUniformLocation(shader, "wh");
-//     glUniform2fv(wh_loc, 1, &wh[0]);
+    glBindVertexArray(m_fullscreen_vao);
 
-//     paintFullScreen();
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
 
-//     glUseProgram(0);
-//     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-// }
+    glUseProgram(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 void Realtime::createShapes() {
     std::set<int> shape_exists;
@@ -811,7 +822,6 @@ void Realtime::makeBloomFBO() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     // Need color buffer for bright colors and normal colors
     glGenTextures(2, m_color_buffers);
-    //glGenerateMipmap(GL_TEXTURE_2D);
 
     for (unsigned int i = 0; i < 2; i++) {
         glBindTexture(GL_TEXTURE_2D, m_color_buffers[i]);
@@ -825,6 +835,7 @@ void Realtime::makeBloomFBO() {
         // Need to use two different color attachments
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_color_buffers[i], 0);
         glGenerateMipmap(GL_TEXTURE_2D);
+
     }
 
 
@@ -1000,16 +1011,22 @@ void Realtime::setBloom() {
     glUniform1i(LUT_ID, 2);
 
     glBindVertexArray(m_fullscreen_vao);
-    glGenerateMipmap(GL_TEXTURE_2D);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_color_buffers[0]);
+
+    // m_color_buffers[0]
+
+
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_pingpong_color[!horizontal]);
+
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_3D, m_lut_texture);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
+    //glGenerateMipmap(GL_TEXTURE_2D);
 
     glUseProgram(0);
 }
@@ -1039,31 +1056,31 @@ void Realtime::mouseReleaseEvent(QMouseEvent *event) {
 
 void Realtime::mouseMoveEvent(QMouseEvent *event) {
     //if (m_mouseDown) {
-        // int posX = event->position().x();
-        // int posY = event->position().y();
-        // int deltaX = posX - m_prev_mouse_pos.x;
-        // int deltaY = posY - m_prev_mouse_pos.y;
-        // m_prev_mouse_pos = glm::vec2(posX, posY);
+    // int posX = event->position().x();
+    // int posY = event->position().y();
+    // int deltaX = posX - m_prev_mouse_pos.x;
+    // int deltaY = posY - m_prev_mouse_pos.y;
+    // m_prev_mouse_pos = glm::vec2(posX, posY);
 
-        // float amount = 0.01f;
-        // SceneCameraData& cam = m_camera.camera;
-        // glm::vec3 final_pos = cam.pos;
+    // float amount = 0.01f;
+    // SceneCameraData& cam = m_camera.camera;
+    // glm::vec3 final_pos = cam.pos;
 
-        // glm::vec3 look = glm::normalize(cam.look);
-        // glm::vec3 up = glm::normalize(cam.up);
+    // glm::vec3 look = glm::normalize(cam.look);
+    // glm::vec3 up = glm::normalize(cam.up);
 
-        // // Use deltaX and deltaY here to rotate
-        // glm::mat3 rod_x = rodrigues(num * amount, up);
-        // num+=2;
-        // look = glm::normalize(rod_x * look);
+    // // Use deltaX and deltaY here to rotate
+    // glm::mat3 rod_x = rodrigues(num * amount, up);
+    // num+=2;
+    // look = glm::normalize(rod_x * look);
 
-        // glm::vec3 right = glm::normalize(glm::cross(look, up));
-        // glm::mat3 rod_y = rodrigues(deltaY * amount, right);
-        // look = glm::normalize(rod_y * look);
+    // glm::vec3 right = glm::normalize(glm::cross(look, up));
+    // glm::mat3 rod_y = rodrigues(deltaY * amount, right);
+    // look = glm::normalize(rod_y * look);
 
-        // cam.look = glm::vec4(look, 0.f);
+    // cam.look = glm::vec4(look, 0.f);
 
-        // update(); // asks for a PaintGL() call to occur
+    // update(); // asks for a PaintGL() call to occur
     //}
 }
 
@@ -1076,7 +1093,7 @@ glm::mat3 Realtime::rodrigues(float theta, glm::vec3 axis) {
         cos + u.x*u.x*(1.0f - cos), u.x*u.y*(1.0f - cos) - u.z*sin, u.x*u.z*(1.0f - cos) + u.y*sin,
         u.x*u.y*(1.0f - cos) + u.z*sin, cos + u.y*u.y*(1.0f - cos), u.y*u.z*(1.0f - cos) - u.x*sin,
         u.x*u.z*(1.0f - cos) - u.y*sin, u.y*u.z*(1.0f - cos) + u.x*sin, cos + u.z*u.z*(1.0f - cos)
-    );
+        );
     return result;
 }
 

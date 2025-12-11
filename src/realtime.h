@@ -56,7 +56,7 @@ private:
     double m_devicePixelRatio;
 
     // Id stores
-    GLuint m_shader, m_shader_bloom, m_shader_blur, m_shader_kuwahara;
+    GLuint m_shader, m_shader_bloom, m_shader_blur, m_shader_kuwahara, m_depth_shader;
     GLuint m_default_fbo, m_fbo, m_rbo, m_fbo_depth;
     GLuint m_color_buffers[2], m_pingpong_fbo[2], m_pingpong_color[2];
     GLuint m_lut_texture;
@@ -128,6 +128,8 @@ private:
 
     GLuint m_color_vbo;
     std::vector<float> m_color_data = {};
+
+    void paintDoF();
 
     //forces
     float m_gravity = 0.0004f;

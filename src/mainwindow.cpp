@@ -59,6 +59,14 @@ void MainWindow::initialize() {
     QLabel *fogMax_label = new QLabel(); // Fog max distance label
     fogMax_label->setText("Fog Max Distance:");
 
+    // DoF labels
+    QLabel *focalPlane_label = new QLabel(); // Focal plane label
+    focalPlane_label->setText("Focal Plane:");
+    QLabel *aperture_label = new QLabel(); // Aperture label
+    aperture_label->setText("Aperture:");
+    QLabel *focalLength_label = new QLabel(); // Focal length label
+    focalLength_label->setText("Focal Length:");
+
 
     // From old Project 6
     // // Create checkbox for per-pixel filter
@@ -221,6 +229,65 @@ void MainWindow::initialize() {
     lexposure->addWidget(exposureBox);
     exposureLayout->setLayout(lexposure);
 
+    // DoF UI layouts and controls
+
+    // Focal plane
+    QGroupBox *focalPlaneLayout = new QGroupBox(); // horizonal focal plane slider alignment
+    QHBoxLayout *lfocalPlane = new QHBoxLayout();
+    focalPlaneSlider = new QSlider(Qt::Orientation::Horizontal); // focal plane slider
+    focalPlaneSlider->setTickInterval(1);
+    focalPlaneSlider->setMinimum(1);
+    focalPlaneSlider->setMaximum(10000);
+    focalPlaneSlider->setValue(1000);
+
+    focalPlaneBox = new QDoubleSpinBox();
+    focalPlaneBox->setMinimum(0.1f);
+    focalPlaneBox->setMaximum(100.f);
+    focalPlaneBox->setSingleStep(0.1f);
+    focalPlaneBox->setValue(10.f);
+
+    lfocalPlane->addWidget(focalPlaneSlider);
+    lfocalPlane->addWidget(focalPlaneBox);
+    focalPlaneLayout->setLayout(lfocalPlane);
+
+    // Aperture
+    QGroupBox *apertureLayout = new QGroupBox(); // horizonal aperture slider alignment
+    QHBoxLayout *laperture = new QHBoxLayout();
+    apertureSlider = new QSlider(Qt::Orientation::Horizontal); // aperture slider
+    apertureSlider->setTickInterval(1);
+    apertureSlider->setMinimum(1);
+    apertureSlider->setMaximum(1000);
+    apertureSlider->setValue(100);
+
+    apertureBox = new QDoubleSpinBox();
+    apertureBox->setMinimum(0.01f);
+    apertureBox->setMaximum(100.f);
+    apertureBox->setSingleStep(0.1f);
+    apertureBox->setValue(1.f);
+
+    laperture->addWidget(apertureSlider);
+    laperture->addWidget(apertureBox);
+    apertureLayout->setLayout(laperture);
+
+    // Focal length
+    QGroupBox *focalLengthLayout = new QGroupBox(); // horizonal focal length slider alignment
+    QHBoxLayout *lfocalLength = new QHBoxLayout();
+    focalLengthSlider = new QSlider(Qt::Orientation::Horizontal); // focal length slider
+    focalLengthSlider->setTickInterval(1);
+    focalLengthSlider->setMinimum(1);
+    focalLengthSlider->setMaximum(1000);
+    focalLengthSlider->setValue(100);
+
+    focalLengthBox = new QDoubleSpinBox();
+    focalLengthBox->setMinimum(0.1f);
+    focalLengthBox->setMaximum(100.f);
+    focalLengthBox->setSingleStep(0.1f);
+    focalLengthBox->setValue(10.f);
+
+    lfocalLength->addWidget(focalLengthSlider);
+    lfocalLength->addWidget(focalLengthBox);
+    focalLengthLayout->setLayout(lfocalLength);
+
     // Extra Credit:
     ec1 = new QCheckBox();
     ec1->setText(QStringLiteral("Bloom"));
@@ -247,7 +314,7 @@ void MainWindow::initialize() {
     vLayout->addWidget(param2_label);
     vLayout->addWidget(p2Layout);
 
-    // Create toolbox and pages for Camera, Fog, Exposure, Extra Credit
+    // Create toolbox and pages for Camera, DoF, Fog, Exposure, Extra Credit
     QToolBox *toolbox = new QToolBox();
 
     // Camera page
@@ -259,6 +326,18 @@ void MainWindow::initialize() {
     cameraLayout->addWidget(far_label);
     cameraLayout->addWidget(farLayout);
     toolbox->addItem(cameraPage, "Camera");
+
+    // Depth of Field group box (collapsible)
+    QGroupBox *dofGroup = new QGroupBox(); // collapsible DoF group
+    QVBoxLayout *dofLayout = new QVBoxLayout();
+    dofLayout->addWidget(focalPlane_label);
+    dofLayout->addWidget(focalPlaneLayout);
+    dofLayout->addWidget(focalLength_label);
+    dofLayout->addWidget(focalLengthLayout);
+    dofLayout->addWidget(aperture_label);
+    dofLayout->addWidget(apertureLayout);
+    dofGroup->setLayout(dofLayout);
+    toolbox->addItem(dofGroup, "Depth of Field");
 
     // Fog page
     QWidget *fogPage = new QWidget();
@@ -308,6 +387,11 @@ void MainWindow::initialize() {
     onValChangeNearBox(0.1f);
     //onValChangeFarBox(10.f);
     onValChangeFarBox(100.f);
+
+    // Set default values for DoF
+    onValChangeFocalPlaneBox(10.f);
+    onValChangeFocalLengthBox(10.f);
+    onValChangeApertureBox(1.f);
 }
 
 void MainWindow::finish() {
@@ -328,6 +412,9 @@ void MainWindow::connectUIElements() {
     connectFog();
     connectExposure();
     connectExtraCredit();
+    connectFocalPlane();
+    connectFocalLength();
+    connectAperture();
 }
 
 
@@ -397,6 +484,25 @@ void MainWindow::connectExtraCredit() {
     connect(ec2, &QCheckBox::clicked, this, &MainWindow::onGraded);
     connect(ec3, &QCheckBox::clicked, this, &MainWindow::onExtraCredit3);
     connect(ec4, &QCheckBox::clicked, this, &MainWindow::onExtraCredit4);
+}
+
+// DoF connects
+void MainWindow::connectFocalPlane() {
+    connect(focalPlaneSlider, &QSlider::valueChanged, this, &MainWindow::onValChangeFocalPlaneSlider);
+    connect(focalPlaneBox, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::onValChangeFocalPlaneBox);
+}
+
+void MainWindow::connectFocalLength() {
+    connect(focalLengthSlider, &QSlider::valueChanged, this, &MainWindow::onValChangeFocalLengthSlider);
+    connect(focalLengthBox, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::onValChangeFocalLengthBox);
+}
+
+void MainWindow::connectAperture() {
+    connect(apertureSlider, &QSlider::valueChanged, this, &MainWindow::onValChangeApertureSlider);
+    connect(apertureBox, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::onValChangeApertureBox);
 }
 
 // From old Project 6
@@ -525,6 +631,44 @@ void MainWindow::onValChangeExposure(int newValue) {
     exposureSlider->setValue(newValue);
     exposureBox->setValue(realExposure);
     settings.exposure = realExposure;
+    realtime->settingsChanged();
+}
+
+// DoF value handlers
+
+void MainWindow::onValChangeFocalPlaneSlider(int newValue) {
+    focalPlaneBox->setValue(newValue/100.f);
+    settings.focalPlane = focalPlaneBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeFocalPlaneBox(double newValue) {
+    focalPlaneSlider->setValue(int(newValue*100.f));
+    settings.focalPlane = focalPlaneBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeFocalLengthSlider(int newValue) {
+    focalLengthBox->setValue(newValue/10.f);
+    settings.focalLength = focalLengthBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeFocalLengthBox(double newValue) {
+    focalLengthSlider->setValue(int(newValue*10.f));
+    settings.focalLength = focalLengthBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeApertureSlider(int newValue) {
+    apertureBox->setValue(newValue/100.f);
+    settings.aperture = apertureBox->value();
+    realtime->settingsChanged();
+}
+
+void MainWindow::onValChangeApertureBox(double newValue) {
+    apertureSlider->setValue(int(newValue*100.f));
+    settings.aperture = apertureBox->value();
     realtime->settingsChanged();
 }
 
