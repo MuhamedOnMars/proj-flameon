@@ -7,3 +7,4 @@ Credits:
 Skyler Hall - Particle Systems, Instanced Rendering, Camera Paths, and Scene Creation
 Chris Mok - L-Systems, Kuwahara Filter, Sky Dome, and Scene Creation
 Briana Fedkiw - Realtime Fog, HDR Rendering, Screen Space Bloom, Color Grading
+Muhamed - Attempted Depth of Field, Parallax Mapping
