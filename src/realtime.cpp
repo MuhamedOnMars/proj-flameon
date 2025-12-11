@@ -563,9 +563,6 @@ void Realtime::paintGL() {
     glDrawArraysInstanced(GL_TRIANGLES, 0, m_vertexData.size()/3.f, m_particles.size());
     glDepthMask(GL_TRUE);
 
-    //setBloom();
-    paintDoF();
-
 
     glUseProgram(0);
 
@@ -575,16 +572,21 @@ void Realtime::paintGL() {
     glViewport(0, 0, m_screen_width, m_screen_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    paintDoF();
 
-    setBloom();
+
+    //setBloom();
     //setKuwahara();
 }
 
 void Realtime::paintDoF(){
     Debug::glErrorCheck();
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+   // glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
+    //glViewport(0, 0, m_screen_width, m_screen_height);
 
     GLuint shader = m_depth_shader;
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader);
 
@@ -594,10 +596,10 @@ void Realtime::paintDoF(){
     GLint color_sampler = glGetUniformLocation(shader, "colorSampler");
     glUniform1i(color_sampler, 0);
 
-    // glActiveTexture(GL_TEXTURE1);
-    // glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
-    // GLint depth_sampler = glGetUniformLocation(shader, "depthSampler");
-    // glUniform1i(depth_sampler, 1);
+    glActiveTexture(GL_TEXTURE31);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_depth);
+    GLint depth_sampler = glGetUniformLocation(shader, "depthSampler");
+    glUniform1i(depth_sampler, 31);
 
     GLint aperture_loc = glGetUniformLocation(shader, "aperture");
     glUniform1f(aperture_loc, settings.aperture);
@@ -854,12 +856,6 @@ void Realtime::makeBloomFBO() {
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_fbo_depth, 0);
 
-    // Renderbuffer
-    glGenRenderbuffers(1, &m_rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, m_rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
-    // Tells opengl there are multiple color buffers
     GLuint attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
     glDrawBuffers(2, attachments);
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
@@ -882,6 +878,7 @@ void Realtime::makeBloomFBO() {
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
     }
     // With two more fbo's, default increase from 2 -> 4
+
     m_default_fbo = 4;
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
 }
@@ -957,9 +954,11 @@ void Realtime::setKuwahara() {
 }
 
 void Realtime::setBloom() {
+
     glUseProgram(m_shader_blur);
     GLuint texture_ID = glGetUniformLocation(m_shader_blur, "tex");
     glUniform1i(texture_ID, 0);
+
 
     bool horizontal = true;
     bool first_iteration = true;
@@ -982,6 +981,9 @@ void Realtime::setBloom() {
         glDrawArrays(GL_TRIANGLES, 0, 6);
         horizontal = !horizontal;
     }
+
+    //paintDoF();
+
     glBindFramebuffer(GL_FRAMEBUFFER, m_default_fbo);
     glViewport(0, 0, m_screen_width, m_screen_height);
 
